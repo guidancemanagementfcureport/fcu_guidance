@@ -1,0 +1,28 @@
+﻿Analyzing fcu_app...                                            
+
+warning - Unused import: 'package:flutter/foundation.dart' - lib\models\user_activity_log_model.dart:1:8 - unused_import
+   info - Statements in an if should be enclosed in a block - lib\pages\counselor\counselor_reports_page.dart:885:45 - curly_braces_in_flow_control_structures
+   info - The private field _userCache could be 'final' - lib\pages\counselor\counselor_student_history_page.dart:32:26 - prefer_final_fields
+   info - Statements in an if should be enclosed in a block - lib\pages\counselor\counselor_student_history_page.dart:162:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pages\counselor\counselor_student_history_page.dart:415:45 - curly_braces_in_flow_control_structures
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\dean\dean_schedule_counseling_page.dart:302:27 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\dean\dean_schedule_counseling_page.dart:340:27 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\dean\dean_schedule_counseling_page.dart:378:27 - deprecated_member_use
+warning - Unused import: 'dart:typed_data' - lib\pages\student\submit_report_page.dart:5:8 - unused_import
+   info - The private field _selectedFiles could be 'final' - lib\pages\student\submit_report_page.dart:31:22 - prefer_final_fields
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\student\submit_report_page.dart:643:39 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\student\submit_report_page.dart:737:39 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\teacher\teacher_case_progress_page.dart:797:27 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\teacher\teacher_case_progress_page.dart:1007:43 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\pages\teacher\teacher_case_progress_page.dart:1066:43 - deprecated_member_use
+
+flutter : 15 issues found. (ran in 2.2s)
+At line:1 char:1
++ flutter analyze > analysis_output.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (1 
+   5 issues found. (ran in 2.2s):String) [],   
+  RemoteException
+    + FullyQualifiedErrorId : NativeCommandErr 
+   or
+ 
