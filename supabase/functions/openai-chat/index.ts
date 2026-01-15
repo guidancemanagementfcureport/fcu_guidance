@@ -1,27 +1,34 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
 
 Deno.serve(async (req) => {
-    // Handle CORS
     if (req.method === 'OPTIONS') {
-        return new Response('ok', {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-            },
-        })
+        return new Response('ok', { headers: corsHeaders })
     }
 
     try {
         const { systemPrompt, userMessage, history = [] } = await req.json()
+        const apiKey = Deno.env.get('OPENAI_API_KEY')
 
-        console.log('Generating response for message:', userMessage);
+        if (!apiKey) {
+            console.error('OPENAI_API_KEY is not set');
+            return new Response(
+                JSON.stringify({ error: 'API key not configured on server' }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+            )
+        }
+
+        console.log(`Processing message: ${userMessage.substring(0, 50)}...`);
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${OPENAI_API_KEY}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -36,23 +43,25 @@ Deno.serve(async (req) => {
             }),
         })
 
+        const data = await response.json()
+
         if (!response.ok) {
-            const errorData = await response.text();
-            console.error('OpenAI API Error:', response.status, errorData);
-            throw new Error(`OpenAI API responded with status ${response.status}`);
+            console.error('OpenAI Error:', data);
+            return new Response(
+                JSON.stringify({ error: data.error?.message || 'Failed to get response from AI' }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: response.status }
+            )
         }
 
-        const data = await response.json()
-        const content = data.choices[0].message.content
-
-        return new Response(JSON.stringify({ content }), {
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        })
+        return new Response(
+            JSON.stringify({ content: data.choices[0].message.content }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        )
     } catch (error: any) {
-        console.error('Function Error:', error.message);
-        return new Response(JSON.stringify({ error: error.message }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        })
+        console.error('Crash:', error.message);
+        return new Response(
+            JSON.stringify({ error: error.message }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        )
     }
 })
