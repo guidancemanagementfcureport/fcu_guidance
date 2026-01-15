@@ -33,7 +33,7 @@ migrate_working_dir/
 .pub/
 
 # Ignore all build outputs EXCEPT Flutter Web
-/build/
+/build/*
 !/build/web/
 
 # (Tracking build output for deployment)
