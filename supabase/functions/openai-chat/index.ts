@@ -1,9 +1,8 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import "https://deno.land/x/xhr@0.1.0/mod.ts"
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 
-serve(async (req: any) => {
+Deno.serve(async (req) => {
     // Handle CORS
     if (req.method === 'OPTIONS') {
         return new Response('ok', {
@@ -16,6 +15,8 @@ serve(async (req: any) => {
 
     try {
         const { systemPrompt, userMessage, history = [] } = await req.json()
+
+        console.log('Generating response for message:', userMessage);
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -35,6 +36,12 @@ serve(async (req: any) => {
             }),
         })
 
+        if (!response.ok) {
+            const errorData = await response.text();
+            console.error('OpenAI API Error:', response.status, errorData);
+            throw new Error(`OpenAI API responded with status ${response.status}`);
+        }
+
         const data = await response.json()
         const content = data.choices[0].message.content
 
@@ -42,6 +49,7 @@ serve(async (req: any) => {
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
         })
     } catch (error: any) {
+        console.error('Function Error:', error.message);
         return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
