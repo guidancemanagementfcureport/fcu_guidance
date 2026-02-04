@@ -347,7 +347,7 @@ class _AiSupportChatboxState extends State<AiSupportChatbox> {
 
   Widget _buildMessageBubble(SupportMessageModel message, bool isMe) {
     final isAi = message.senderRole == 'ai';
-    final timeStr = DateFormat('h:mm a').format(message.createdAt);
+    final timeStr = DateFormat('MMM d, h:mm a').format(message.createdAt);
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,

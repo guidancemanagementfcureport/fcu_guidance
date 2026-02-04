@@ -299,8 +299,8 @@ class _ViewReportStatusPageState extends State<ViewReportStatusPage> {
                               const SizedBox(width: 6),
                               Text(
                                 DateFormat(
-                                  'MMM dd, yyyy • HH:mm',
-                                ).format(log.timestamp),
+                                  'MMM dd, yyyy • h:mm a',
+                                ).format(log.timestamp.toLocal()),
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: AppTheme.mediumGray,
@@ -714,8 +714,8 @@ class _ViewReportStatusPageState extends State<ViewReportStatusPage> {
                                           const Spacer(),
                                           Text(
                                             DateFormat(
-                                              'MMM dd, yyyy HH:mm',
-                                            ).format(log.timestamp),
+                                              'MMM dd, yyyy • h:mm a',
+                                            ).format(log.timestamp.toLocal()),
                                             style: TextStyle(
                                               fontSize: 10,
                                               color: AppTheme.mediumGray,

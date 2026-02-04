@@ -81,19 +81,14 @@ class _GuidanceResourcesPageState extends State<GuidanceResourcesPage> {
       'url': 'https://www.youtube.com/watch?v=XULUBg_ZcAU',
     },
     {
-      'title': 'Nature Sounds - Ocean Waves',
-      'description': 'Immersive ocean waves for deep relaxation.',
-      'url': 'https://www.youtube.com/watch?v=bn9F19Hi1Lk',
+      'title': 'Rainy Jazz Cafe',
+      'description': 'Smooth jazz and rain sounds for relaxation.',
+      'url': 'https://www.youtube.com/watch?v=2OEL4P1Rz04',
     },
     {
-      'title': 'Ambient Chill - Soft Guitar',
-      'description': 'Gentle guitar melodies for peace of mind.',
-      'url': 'https://www.youtube.com/watch?v=FjHGRS_796I',
-    },
-    {
-      'title': 'Lo-fi Jazz for Reading',
-      'description': 'Smooth jazz beats perfect for reading sessions.',
-      'url': 'https://www.youtube.com/watch?v=5yx6BWbL1E4',
+      'title': 'Celestial White Noise',
+      'description': 'Pure white noise to block distractions.',
+      'url': 'https://www.youtube.com/watch?v=wZKzdFCxAgk',
     },
   ];
 
@@ -119,19 +114,14 @@ class _GuidanceResourcesPageState extends State<GuidanceResourcesPage> {
       'url': 'https://www.youtube.com/watch?v=aEqlQvczMJQ',
     },
     {
-      'title': 'Body Scan Meditation',
-      'description': 'Guided journey to release physical tension.',
-      'url': 'https://www.youtube.com/watch?v=u4gZgnCy5ew',
+      'title': 'Positive Energy',
+      'description': 'Start your day with positive affirmations.',
+      'url': 'https://www.youtube.com/watch?v=s0PO2x66ljo',
     },
     {
-      'title': 'Positive Affirmations',
-      'description': 'Start your day with positivity and confidence.',
-      'url': 'https://www.youtube.com/watch?v=ZToicY62f1U',
-    },
-    {
-      'title': 'Gratitude Meditation',
-      'description': 'Focus on what you are thankful for today.',
-      'url': 'https://www.youtube.com/watch?v=6P_v9784iHk',
+      'title': 'Anxiety Release',
+      'description': 'Let go of worries and find inner peace.',
+      'url': 'https://www.youtube.com/watch?v=lFcSrYw-ARY',
     },
   ];
 
