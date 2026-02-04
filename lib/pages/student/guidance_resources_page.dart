@@ -80,6 +80,21 @@ class _GuidanceResourcesPageState extends State<GuidanceResourcesPage> {
       'description': 'Soft piano music to enhance focus.',
       'url': 'https://www.youtube.com/watch?v=XULUBg_ZcAU',
     },
+    {
+      'title': 'Nature Sounds - Ocean Waves',
+      'description': 'Immersive ocean waves for deep relaxation.',
+      'url': 'https://www.youtube.com/watch?v=bn9F19Hi1Lk',
+    },
+    {
+      'title': 'Ambient Chill - Soft Guitar',
+      'description': 'Gentle guitar melodies for peace of mind.',
+      'url': 'https://www.youtube.com/watch?v=FjHGRS_796I',
+    },
+    {
+      'title': 'Lo-fi Jazz for Reading',
+      'description': 'Smooth jazz beats perfect for reading sessions.',
+      'url': 'https://www.youtube.com/watch?v=5yx6BWbL1E4',
+    },
   ];
 
   final List<Map<String, dynamic>> _meditationTracks = [
@@ -102,6 +117,21 @@ class _GuidanceResourcesPageState extends State<GuidanceResourcesPage> {
       'title': 'Sleep Meditation',
       'description': 'Drift off to sleep with this guided session.',
       'url': 'https://www.youtube.com/watch?v=aEqlQvczMJQ',
+    },
+    {
+      'title': 'Body Scan Meditation',
+      'description': 'Guided journey to release physical tension.',
+      'url': 'https://www.youtube.com/watch?v=u4gZgnCy5ew',
+    },
+    {
+      'title': 'Positive Affirmations',
+      'description': 'Start your day with positivity and confidence.',
+      'url': 'https://www.youtube.com/watch?v=ZToicY62f1U',
+    },
+    {
+      'title': 'Gratitude Meditation',
+      'description': 'Focus on what you are thankful for today.',
+      'url': 'https://www.youtube.com/watch?v=6P_v9784iHk',
     },
   ];
 
