@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../services/supabase_service.dart';
 
 class OpenAIService {
@@ -22,6 +24,9 @@ class OpenAIService {
         return _getFallbackResponse(userMessage);
       }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('OpenAI Function call failed: $e');
+      }
       return _getFallbackResponse(userMessage);
     }
   }

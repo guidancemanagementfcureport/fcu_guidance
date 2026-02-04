@@ -28,13 +28,23 @@ class SupabaseService {
     required String supabaseAnonKey,
   }) async {
     if (!_initialized) {
-      await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
-      _client = Supabase.instance.client;
-      _initialized = true;
+      try {
+        await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+        _client = Supabase.instance.client;
+        _initialized = true;
+      } catch (e) {
+        debugPrint('Failed to initialize Supabase: $e');
+        rethrow;
+      }
     }
   }
 
-  SupabaseClient get client => _client;
+  SupabaseClient get client {
+    if (!_initialized) {
+      throw Exception('SupabaseService must be initialized before use.');
+    }
+    return _client;
+  }
 
   User? get currentUser => _client.auth.currentUser;
   String? get currentUserId => _client.auth.currentUser?.id;

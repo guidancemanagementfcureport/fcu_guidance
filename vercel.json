@@ -1,13 +1,7 @@
 {
-  "framework": null,
   "outputDirectory": "build/web",
-  "builds": [
-    { "src": "build/web/**", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/build/web/$1" },
-    { "handle": "filesystem" },
-    { "src": "/.*", "dest": "/build/web/index.html" }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
 
