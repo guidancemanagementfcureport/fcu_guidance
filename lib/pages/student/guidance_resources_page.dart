@@ -61,67 +61,67 @@ class _GuidanceResourcesPageState extends State<GuidanceResourcesPage> {
   // Mock Data for Playlists
   final List<Map<String, dynamic>> _musicTracks = [
     {
-      'title': 'Focus & Relax Music',
-      'description': 'Calming lo-fi beats to help you study or relax.',
-      'url': 'https://youtu.be/1ZYbU82GVz4?si=dif153OtXexMqS1a',
+      'title': 'Lofi Hip Hop Radio',
+      'description': 'Beats to relax/study to - Lofi Girl.',
+      'url': 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
     },
     {
       'title': 'Deep Focus Music',
       'description': 'Ambient soundscapes for deep concentration.',
-      'url': 'https://www.youtube.com/watch?v=WPni755-Krg',
+      'url': 'https://www.youtube.com/watch?v=84_qUv10ZTU',
     },
     {
       'title': 'Study with Me',
       'description': 'Real-time study session with calming background.',
-      'url': 'https://www.youtube.com/watch?v=M5QY2_8704o',
+      'url': 'https://www.youtube.com/watch?v=0sQcI03i8V4',
     },
     {
       'title': 'Piano for Studying',
-      'description': 'Soft piano music to enhance focus.',
-      'url': 'https://www.youtube.com/watch?v=XULUBg_ZcAU',
+      'description': 'Relaxing piano music to enhance focus.',
+      'url': 'https://www.youtube.com/watch?v=WJ3-F02-F_Y',
     },
     {
       'title': 'Rainy Jazz Cafe',
       'description': 'Smooth jazz and rain sounds for relaxation.',
-      'url': 'https://www.youtube.com/watch?v=2OEL4P1Rz04',
+      'url': 'https://www.youtube.com/watch?v=VMAPTo7RVCo',
     },
     {
       'title': 'Celestial White Noise',
       'description': 'Pure white noise to block distractions.',
-      'url': 'https://www.youtube.com/watch?v=wZKzdFCxAgk',
+      'url': 'https://www.youtube.com/watch?v=NMRE8U9VjVI',
     },
   ];
 
   final List<Map<String, dynamic>> _meditationTracks = [
     {
-      'title': 'Breathing Exercise',
-      'description': 'Take a moment to breathe deep and reset.',
-      'url': 'https://www.youtube.com/watch?v=inpok4MKVLM',
+      'title': 'Box Breathing',
+      'description': 'Simple and effective breathing technique.',
+      'url': 'https://www.youtube.com/watch?v=kpSGVX4tDcs',
     },
     {
       'title': '5-Minute Meditation',
-      'description': 'Quick stress relief for busy students.',
-      'url': 'https://www.youtube.com/watch?v=ssss7V1_eyA',
+      'description': 'Quick stress relief you can do anywhere.',
+      'url': 'https://www.youtube.com/watch?v=zSkFFW-5-DY',
     },
     {
-      'title': 'Mindfulness for Anxiety',
-      'description': 'Guided meditation to reduce anxiety.',
-      'url': 'https://www.youtube.com/watch?v=O-6f5wQXSu8',
+      'title': 'Daily Calm',
+      'description': '10-minute mindfulness meditation.',
+      'url': 'https://www.youtube.com/watch?v=ZToicYcHIOU',
     },
     {
       'title': 'Sleep Meditation',
       'description': 'Drift off to sleep with this guided session.',
-      'url': 'https://www.youtube.com/watch?v=aEqlQvczMJQ',
+      'url': 'https://www.youtube.com/watch?v=TxT0K5t-Fj0',
     },
     {
       'title': 'Positive Energy',
       'description': 'Start your day with positive affirmations.',
-      'url': 'https://www.youtube.com/watch?v=s0PO2x66ljo',
+      'url': 'https://www.youtube.com/watch?v=hZ3s5R29_2I',
     },
     {
       'title': 'Anxiety Release',
       'description': 'Let go of worries and find inner peace.',
-      'url': 'https://www.youtube.com/watch?v=lFcSrYw-ARY',
+      'url': 'https://www.youtube.com/watch?v=O-6f5wQXSu8',
     },
   ];
 
