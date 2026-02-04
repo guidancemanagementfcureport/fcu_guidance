@@ -581,7 +581,7 @@ class _AnonymousChatboxState extends State<AnonymousChatbox> {
     Map<String, dynamic> message,
     bool isFromAnonymous,
   ) {
-    final timestamp = DateTime.parse(message['created_at'] as String);
+    final timestamp = DateTime.parse(message['created_at'] as String).toLocal();
     final timeStr = DateFormat('HH:mm').format(timestamp);
 
     return Align(

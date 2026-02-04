@@ -84,8 +84,10 @@ class _AnonymousReportTrackerPageState
               status: status,
               isAnonymous: true,
               trackingId: reportData['case_code'] as String?,
-              createdAt: DateTime.parse(reportData['created_at'] as String),
-              updatedAt: DateTime.parse(reportData['updated_at'] as String),
+              createdAt:
+                  DateTime.parse(reportData['created_at'] as String).toLocal(),
+              updatedAt:
+                  DateTime.parse(reportData['updated_at'] as String).toLocal(),
             );
             _isLoading = false;
           });

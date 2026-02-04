@@ -87,8 +87,8 @@ class CounselingRequestModel {
       sessionType: json['session_type'] as String?,
       locationMode: json['location_mode'] as String?,
       participants: participants,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
     );
   }
 

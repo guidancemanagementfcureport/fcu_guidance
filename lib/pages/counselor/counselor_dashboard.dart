@@ -212,9 +212,8 @@ class _CounselorDashboardState extends State<CounselorDashboard> {
 
           _recentActivityItems =
               activities.map((activity) {
-                final timestamp = DateTime.parse(
-                  activity['timestamp'] as String,
-                );
+                final timestamp =
+                    DateTime.parse(activity['timestamp'] as String).toLocal();
                 final timeAgo = _formatTimeAgo(timestamp);
 
                 String title;

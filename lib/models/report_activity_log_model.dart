@@ -3,7 +3,8 @@ class ReportActivityLog {
   final String reportId;
   final String actorId; // Teacher or counselor who performed the action
   final String role; // "student", "teacher", "counselor"
-  final String action; // "submitted", "reviewed", "forwarded", "accepted", "confirmed"
+  final String
+  action; // "submitted", "reviewed", "forwarded", "accepted", "confirmed"
   final String? note; // Optional comment/note
   final DateTime timestamp;
 
@@ -25,7 +26,7 @@ class ReportActivityLog {
       role: json['role'] as String,
       action: json['action'] as String,
       note: json['note'] as String?,
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      timestamp: DateTime.parse(json['timestamp'] as String).toLocal(),
     );
   }
 
@@ -41,4 +42,3 @@ class ReportActivityLog {
     };
   }
 }
-

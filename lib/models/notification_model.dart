@@ -28,7 +28,7 @@ class NotificationModel {
       type: NotificationType.fromString(json['type'] as String),
       isRead: json['is_read'] as bool? ?? false,
       data: json['data'] as Map<String, dynamic>? ?? {},
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
     );
   }
 

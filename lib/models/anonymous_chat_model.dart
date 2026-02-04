@@ -24,8 +24,8 @@ class AnonymousReport {
       category: json['category'] as String,
       description: json['description'] as String,
       status: json['status'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
     );
   }
 
@@ -69,7 +69,7 @@ class AnonymousMessage {
       senderId: json['sender_id'] as String?,
       message: json['message'] as String,
       isRead: (json['is_read'] as bool?) ?? false,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
     );
   }
 
@@ -107,7 +107,7 @@ class AnonymousReportTeacher {
       id: json['id'] as String,
       reportId: json['report_id'] as String,
       teacherId: json['teacher_id'] as String,
-      assignedAt: DateTime.parse(json['assigned_at'] as String),
+      assignedAt: DateTime.parse(json['assigned_at'] as String).toLocal(),
     );
   }
 
@@ -120,4 +120,3 @@ class AnonymousReportTeacher {
     };
   }
 }
-

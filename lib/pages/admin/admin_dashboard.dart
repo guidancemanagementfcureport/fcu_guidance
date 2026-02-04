@@ -598,7 +598,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               itemBuilder: (context, index) {
                 final report = _recentReports[index];
                 final isAnonymous = report['is_anonymous'] as bool;
-                final createdAt = DateTime.parse(report['created_at']);
+                final createdAt =
+                    DateTime.parse(report['created_at']).toLocal();
                 final time = DateFormat('MMM dd').format(createdAt);
 
                 final String status = report['status'] ?? 'pending';
@@ -756,7 +757,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void _viewCaseDetail(Map<String, dynamic> report) {
     if (report.isEmpty) return;
 
-    final createdAt = DateTime.parse(report['created_at'] as String);
+    final createdAt = DateTime.parse(report['created_at'] as String).toLocal();
     final status = ReportStatus.fromString(report['status'] as String);
     final isAnonymous = report['is_anonymous'] as bool? ?? false;
 

@@ -1062,8 +1062,10 @@ class SupabaseService {
                 counselorId: report['counselor_id'] as String?,
                 teacherNote: report['teacher_note'] as String?,
                 trackingId: report['case_code'] as String?,
-                createdAt: DateTime.parse(report['created_at'] as String),
-                updatedAt: DateTime.parse(report['updated_at'] as String),
+                createdAt:
+                    DateTime.parse(report['created_at'] as String).toLocal(),
+                updatedAt:
+                    DateTime.parse(report['updated_at'] as String).toLocal(),
               );
             })
             .whereType<ReportModel>()
@@ -1160,8 +1162,8 @@ class SupabaseService {
           status: status, // Return the requested status to keep UI in sync
           isAnonymous: true,
           trackingId: response['case_code'] as String?,
-          createdAt: DateTime.parse(response['created_at'] as String),
-          updatedAt: DateTime.parse(response['updated_at'] as String),
+          createdAt: DateTime.parse(response['created_at'] as String).toLocal(),
+          updatedAt: DateTime.parse(response['updated_at'] as String).toLocal(),
         );
 
         return report;
@@ -1336,10 +1338,12 @@ class SupabaseService {
                       : ReportStatus.fromString(json['status'] as String),
               isAnonymous: true,
               trackingId: json['case_code'] as String?,
-              createdAt: DateTime.parse(json['created_at'] as String),
-              updatedAt: DateTime.parse(
-                json['updated_at'] as String? ?? json['created_at'] as String,
-              ),
+              createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+              updatedAt:
+                  DateTime.parse(
+                    json['updated_at'] as String? ??
+                        json['created_at'] as String,
+                  ).toLocal(),
             );
           }).toList();
 
@@ -1443,10 +1447,12 @@ class SupabaseService {
               status: status,
               isAnonymous: true,
               trackingId: json['case_code'] as String?,
-              createdAt: DateTime.parse(json['created_at'] as String),
-              updatedAt: DateTime.parse(
-                json['updated_at'] as String? ?? json['created_at'] as String,
-              ),
+              createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+              updatedAt:
+                  DateTime.parse(
+                    json['updated_at'] as String? ??
+                        json['created_at'] as String,
+                  ).toLocal(),
             );
           }).toList();
 
@@ -3210,7 +3216,7 @@ class SupabaseService {
 
       final monthlyTrends = <String, int>{};
       for (final row in trendsResponse as List) {
-        final createdAt = DateTime.parse(row['created_at'] as String);
+        final createdAt = DateTime.parse(row['created_at'] as String).toLocal();
         final monthKey =
             '${createdAt.year}-${createdAt.month.toString().padLeft(2, '0')}';
         monthlyTrends[monthKey] = (monthlyTrends[monthKey] ?? 0) + 1;
@@ -3319,8 +3325,8 @@ class SupabaseService {
       // 5. Combine and Sort
       final allReports = [...processedReports, ...processedAnonymous];
       allReports.sort((a, b) {
-        final dateA = DateTime.parse(a['created_at']);
-        final dateB = DateTime.parse(b['created_at']);
+        final dateA = DateTime.parse(a['created_at']).toLocal();
+        final dateB = DateTime.parse(b['created_at']).toLocal();
         return dateB.compareTo(dateA);
       });
 
@@ -3415,8 +3421,8 @@ class SupabaseService {
       // 5. Combine and Sort and Limit
       final allReports = [...processedReports, ...processedAnonymous];
       allReports.sort((a, b) {
-        final dateA = DateTime.parse(a['created_at']);
-        final dateB = DateTime.parse(b['created_at']);
+        final dateA = DateTime.parse(a['created_at']).toLocal();
+        final dateB = DateTime.parse(b['created_at']).toLocal();
         return dateB.compareTo(dateA);
       });
 
@@ -3444,7 +3450,8 @@ class SupabaseService {
           allReports.where((report) {
             // 1. Date filter
             if (startDate != null || endDate != null) {
-              final createdAt = DateTime.parse(report['created_at'] as String);
+              final createdAt =
+                  DateTime.parse(report['created_at'] as String).toLocal();
               if (startDate != null && createdAt.isBefore(startDate)) {
                 return false;
               }

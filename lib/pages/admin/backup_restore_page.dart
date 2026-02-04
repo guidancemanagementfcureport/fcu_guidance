@@ -150,7 +150,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                 ),
                 pw.SizedBox(height: 20),
                 pw.Text(
-                  'Date: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.parse(job['created_at']))}',
+                  'Date: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.parse(job['created_at']).toLocal())}',
                 ),
                 pw.Text('Job ID: ${job['id']}'),
                 pw.Text('Type: ${job['backup_type']}'),
@@ -204,7 +204,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
       if (kIsWeb) {
         await FilePicker.platform.saveFile(
           fileName:
-              'backup_${DateFormat('yyyyMMdd_HHmm').format(DateTime.parse(job['created_at']))}.pdf',
+              'backup_${DateFormat('yyyyMMdd_HHmm').format(DateTime.parse(job['created_at']).toLocal())}.pdf',
           bytes: bytes,
         );
         if (mounted) {
@@ -214,7 +214,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
         final String? outputFile = await FilePicker.platform.saveFile(
           dialogTitle: 'Save Backup Report',
           fileName:
-              'backup_${DateFormat('yyyyMMdd_HHmm').format(DateTime.parse(job['created_at']))}.pdf',
+              'backup_${DateFormat('yyyyMMdd_HHmm').format(DateTime.parse(job['created_at']).toLocal())}.pdf',
           type: FileType.custom,
           allowedExtensions: ['pdf'],
         );
@@ -281,7 +281,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
       final uint8ZipBytes = Uint8List.fromList(zipBytes);
 
       final String fileName =
-          'backup_full_${DateFormat('yyyyMMdd_HHmm').format(DateTime.parse(job['created_at']))}.zip';
+          'backup_full_${DateFormat('yyyyMMdd_HHmm').format(DateTime.parse(job['created_at']).toLocal())}.zip';
 
       if (kIsWeb) {
         await FilePicker.platform.saveFile(
@@ -387,7 +387,7 @@ class _BackupRestorePageState extends State<BackupRestorePage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Backup Date: ${DateFormat('MMM dd, yyyy HH:mm').format(DateTime.parse(job['created_at']))}',
+                  'Backup Date: ${DateFormat('MMM dd, yyyy HH:mm').format(DateTime.parse(job['created_at']).toLocal())}',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text('Type: ${job['backup_type']}'),

@@ -707,7 +707,7 @@ class _DeanReportAnalyticsPageState extends State<DeanReportAnalyticsPage> {
   Widget _buildModernTableRow(Map<String, dynamic> report) {
     final reportId = report['id'] as String;
     final status = ReportStatus.fromString(report['status'] as String);
-    final createdAt = DateTime.parse(report['created_at'] as String);
+    final createdAt = DateTime.parse(report['created_at'] as String).toLocal();
     final isAnonymous = report['is_anonymous'] as bool? ?? false;
     final student = report['student'] as Map<String, dynamic>?;
     final counselor = report['counselor'] as Map<String, dynamic>?;
@@ -840,7 +840,8 @@ class _DeanReportAnalyticsPageState extends State<DeanReportAnalyticsPage> {
         final report = reports[index];
         final reportId = report['id'] as String;
         final status = ReportStatus.fromString(report['status'] as String);
-        final createdAt = DateTime.parse(report['created_at'] as String);
+        final createdAt =
+            DateTime.parse(report['created_at'] as String).toLocal();
         final isAnonymous = report['is_anonymous'] as bool? ?? false;
         final student = report['student'] as Map<String, dynamic>?;
 
@@ -1015,7 +1016,7 @@ class _DeanReportAnalyticsPageState extends State<DeanReportAnalyticsPage> {
 
     if (mounted) Navigator.pop(context);
 
-    final createdAt = DateTime.parse(report['created_at'] as String);
+    final createdAt = DateTime.parse(report['created_at'] as String).toLocal();
     final status = ReportStatus.fromString(report['status'] as String);
     final isAnonymous = report['is_anonymous'] as bool? ?? false;
 

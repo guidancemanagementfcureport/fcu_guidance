@@ -1084,7 +1084,7 @@ class _AdminReportAnalyticsPageState extends State<AdminReportAnalyticsPage> {
   Widget _buildReportRow(Map<String, dynamic> report) {
     final reportId = report['id'] as String;
     final status = ReportStatus.fromString(report['status'] as String);
-    final createdAt = DateTime.parse(report['created_at'] as String);
+    final createdAt = DateTime.parse(report['created_at'] as String).toLocal();
     final isAnonymous = report['is_anonymous'] as bool? ?? false;
     final student = report['student'] as Map<String, dynamic>?;
     final counselor = report['counselor'] as Map<String, dynamic>?;
@@ -1309,7 +1309,7 @@ class _AdminReportAnalyticsPageState extends State<AdminReportAnalyticsPage> {
 
       final sessionDate = DateFormat(
         'MMMM dd, yyyy',
-      ).format(DateTime.parse(reportData['created_at']));
+      ).format(DateTime.parse(reportData['created_at']).toLocal());
 
       final reportStatus = reportData['status'].toString();
       final subject = reportData['title'] ?? 'No Subject';

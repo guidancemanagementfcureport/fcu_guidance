@@ -166,8 +166,8 @@ class _CommunicationToolsPageState extends State<CommunicationToolsPage> {
                         orElse: () => ReportStatus.pending,
                       ),
               isAnonymous: true,
-              createdAt: DateTime.parse(report['created_at']),
-              updatedAt: DateTime.parse(report['updated_at']),
+              createdAt: DateTime.parse(report['created_at']).toLocal(),
+              updatedAt: DateTime.parse(report['updated_at']).toLocal(),
               trackingId: report['case_code'],
               teacherNote: report['teacher_note'],
               counselorId: report['counselor_id'],
@@ -304,7 +304,7 @@ class _CommunicationToolsPageState extends State<CommunicationToolsPage> {
                   senderId: msg['sender_id'] ?? 'anonymous',
                   senderRole: msg['sender_type'],
                   message: msg['message'],
-                  createdAt: DateTime.parse(msg['created_at']),
+                  createdAt: DateTime.parse(msg['created_at']).toLocal(),
                 );
               }).toList();
         });

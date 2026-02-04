@@ -21,9 +21,7 @@ class StudentProfilePage extends StatelessWidget {
     if (user == null) {
       return ResponsiveSidebar(
         currentRoute: currentRoute,
-        child: const Scaffold(
-          body: Center(child: Text('Not authenticated')),
-        ),
+        child: const Scaffold(body: Center(child: Text('Not authenticated'))),
       );
     }
 
@@ -55,10 +53,15 @@ class StudentProfilePage extends StatelessWidget {
                       backgroundColor: Colors.white.withValues(alpha: 0.2),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                        side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
                       ),
                     ),
                   ),
@@ -70,22 +73,25 @@ class StudentProfilePage extends StatelessWidget {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1000),
-                      child: isDesktop 
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildAvatarCard(context, user),
-                              const SizedBox(width: 32),
-                              Expanded(child: _buildInfoCard(context, user)),
-                            ],
-                          )
-                        : Column(
-                            children: [
-                              _buildAvatarCard(context, user),
-                              const SizedBox(height: 32),
-                              _buildInfoCard(context, user),
-                            ],
-                          ),
+                      child:
+                          isDesktop
+                              ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildAvatarCard(context, user),
+                                  const SizedBox(width: 32),
+                                  Expanded(
+                                    child: _buildInfoCard(context, user),
+                                  ),
+                                ],
+                              )
+                              : Column(
+                                children: [
+                                  _buildAvatarCard(context, user),
+                                  const SizedBox(height: 32),
+                                  _buildInfoCard(context, user),
+                                ],
+                              ),
                     ),
                   ),
                 ),
@@ -120,25 +126,45 @@ class StudentProfilePage extends StatelessWidget {
             height: 140,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppTheme.skyBlue.withValues(alpha: 0.2), AppTheme.infoBlue.withValues(alpha: 0.1)],
+                colors: [
+                  AppTheme.skyBlue.withValues(alpha: 0.2),
+                  AppTheme.infoBlue.withValues(alpha: 0.1),
+                ],
               ),
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 4),
               boxShadow: [
-                BoxShadow(color: AppTheme.skyBlue.withValues(alpha: 0.2), blurRadius: 15, spreadRadius: 2),
+                BoxShadow(
+                  color: AppTheme.skyBlue.withValues(alpha: 0.2),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                ),
               ],
-              image: user.avatarUrl != null
-                  ? DecorationImage(image: NetworkImage(user.avatarUrl!), fit: BoxFit.cover)
-                  : null,
+              image:
+                  user.avatarUrl != null
+                      ? DecorationImage(
+                        image: NetworkImage(user.avatarUrl!),
+                        fit: BoxFit.cover,
+                      )
+                      : null,
             ),
-            child: user.avatarUrl == null
-                ? const Icon(Icons.person_rounded, color: AppTheme.skyBlue, size: 70)
-                : null,
+            child:
+                user.avatarUrl == null
+                    ? const Icon(
+                      Icons.person_rounded,
+                      color: AppTheme.skyBlue,
+                      size: 70,
+                    )
+                    : null,
           ),
           const SizedBox(height: 24),
           Text(
             user.fullName,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.deepBlue),
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.deepBlue,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -148,32 +174,51 @@ class StudentProfilePage extends StatelessWidget {
             alignment: WrapAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.skyBlue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   user.role.displayName.toUpperCase(),
-                  style: const TextStyle(color: AppTheme.skyBlue, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1),
+                  style: const TextStyle(
+                    color: AppTheme.skyBlue,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                    letterSpacing: 1,
+                  ),
                 ),
               ),
               if (user.studentLevel != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.mediumBlue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     user.studentLevel!.displayName.toUpperCase(),
-                    style: const TextStyle(color: AppTheme.mediumBlue, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1),
+                    style: const TextStyle(
+                      color: AppTheme.mediumBlue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ),
             ],
           ),
           const SizedBox(height: 40),
-          _buildQuickStat('Registered Since', DateFormat('MMM yyyy').format(user.createdAt)),
+          _buildQuickStat(
+            'Registered Since',
+            DateFormat('MMM yyyy').format(user.createdAt),
+          ),
         ],
       ),
     ).fadeInSlideUp();
@@ -182,9 +227,19 @@ class StudentProfilePage extends StatelessWidget {
   Widget _buildQuickStat(String label, String value) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: AppTheme.mediumGray, fontSize: 12)),
+        Text(
+          label,
+          style: const TextStyle(color: AppTheme.mediumGray, fontSize: 12),
+        ),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(color: AppTheme.deepBlue, fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(
+          value,
+          style: const TextStyle(
+            color: AppTheme.deepBlue,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
       ],
     );
   }
@@ -208,44 +263,100 @@ class StudentProfilePage extends StatelessWidget {
         children: [
           const Text(
             'Academic Information',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.deepBlue),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.deepBlue,
+            ),
           ),
           const SizedBox(height: 32),
-          _buildInfoItem(Icons.alternate_email_rounded, 'School Email', user.gmail, AppTheme.skyBlue),
+          _buildInfoItem(
+            Icons.alternate_email_rounded,
+            'School Email',
+            user.gmail,
+            AppTheme.skyBlue,
+          ),
           const Divider(height: 32),
           if (user.studentLevel != null) ...[
-            _buildInfoItem(Icons.school_rounded, 'Education Level', user.studentLevel!.displayName, AppTheme.mediumBlue),
+            _buildInfoItem(
+              Icons.school_rounded,
+              'Education Level',
+              user.studentLevel!.displayName,
+              AppTheme.mediumBlue,
+            ),
             const Divider(height: 32),
           ],
           if (user.course != null && user.course!.isNotEmpty) ...[
-            _buildInfoItem(Icons.auto_stories_rounded, 'Course/Program', user.course!, AppTheme.successGreen),
+            _buildInfoItem(
+              Icons.auto_stories_rounded,
+              'Course/Program',
+              user.course!,
+              AppTheme.successGreen,
+            ),
             const Divider(height: 32),
           ],
           if (user.strand != null && user.strand!.isNotEmpty) ...[
-            _buildInfoItem(Icons.layers_rounded, 'Academic Strand', user.strand!, AppTheme.successGreen),
+            _buildInfoItem(
+              Icons.layers_rounded,
+              'Academic Strand',
+              user.strand!,
+              AppTheme.successGreen,
+            ),
             const Divider(height: 32),
           ],
           if (user.gradeLevel != null && user.gradeLevel!.isNotEmpty) ...[
-            _buildInfoItem(Icons.grade_rounded, 'Grade Level', user.gradeLevel!, AppTheme.warningOrange),
+            _buildInfoItem(
+              Icons.grade_rounded,
+              'Grade Level',
+              user.gradeLevel!,
+              AppTheme.warningOrange,
+            ),
             const Divider(height: 32),
           ],
           if (user.section != null && user.section!.isNotEmpty) ...[
-            _buildInfoItem(Icons.group_rounded, 'Class Section', user.section!, AppTheme.infoBlue),
+            _buildInfoItem(
+              Icons.group_rounded,
+              'Class Section',
+              user.section!,
+              AppTheme.infoBlue,
+            ),
             const Divider(height: 32),
           ],
           if (user.yearLevel != null && user.yearLevel!.isNotEmpty) ...[
-            _buildInfoItem(Icons.calendar_view_day_rounded, 'Year Level', user.yearLevel!, AppTheme.infoBlue),
+            _buildInfoItem(
+              Icons.calendar_view_day_rounded,
+              'Year Level',
+              user.yearLevel!,
+              AppTheme.infoBlue,
+            ),
             const Divider(height: 32),
           ],
-          _buildInfoItem(Icons.verified_user_outlined, 'Portal Status', user.isActive ? 'Active & Verified' : 'Standard', AppTheme.successGreen),
+          _buildInfoItem(
+            Icons.verified_user_outlined,
+            'Portal Status',
+            user.isActive ? 'Active & Verified' : 'Standard',
+            AppTheme.successGreen,
+          ),
           const Divider(height: 32),
-          _buildInfoItem(Icons.login_rounded, 'Last Activity', user.lastLogin != null ? DateFormat('MMMM dd, yyyy • HH:mm').format(user.lastLogin!) : 'Recent session', AppTheme.paleBlue),
+          _buildInfoItem(
+            Icons.login_rounded,
+            'Last Activity',
+            user.lastLogin != null
+                ? DateFormat('MMMM dd, yyyy • HH:mm').format(user.lastLogin!)
+                : 'Recent session',
+            AppTheme.paleBlue,
+          ),
         ],
       ),
     ).fadeInSlideUp(delay: const Duration(milliseconds: 100));
   }
 
-  Widget _buildInfoItem(IconData icon, String label, String value, Color color) {
+  Widget _buildInfoItem(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Row(
       children: [
         Container(
@@ -261,9 +372,23 @@ class StudentProfilePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(color: AppTheme.mediumGray, fontSize: 13, fontWeight: FontWeight.w500)),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppTheme.mediumGray,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(value, style: const TextStyle(color: AppTheme.deepBlue, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: AppTheme.deepBlue,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
             ],
           ),
         ),

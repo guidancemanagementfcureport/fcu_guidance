@@ -24,10 +24,11 @@ class CounselingActivityLog {
       actorId: json['actor_id'] as String,
       action: json['action'] as String,
       note: json['note'] as String?,
-      timestamp: DateTime.parse(json['timestamp'] as String),
-      actorName: json['users'] != null && json['users']['full_name'] != null
-          ? json['users']['full_name'] as String
-          : null,
+      timestamp: DateTime.parse(json['timestamp'] as String).toLocal(),
+      actorName:
+          json['users'] != null && json['users']['full_name'] != null
+              ? json['users']['full_name'] as String
+              : null,
     );
   }
 
@@ -42,4 +43,3 @@ class CounselingActivityLog {
     };
   }
 }
-

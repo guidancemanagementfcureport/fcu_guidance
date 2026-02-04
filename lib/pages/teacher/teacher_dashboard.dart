@@ -135,9 +135,8 @@ class _TeacherDashboardState extends State<TeacherDashboard> {
         setState(() {
           _activityItems =
               activities.map((activity) {
-                final timestamp = DateTime.parse(
-                  activity['timestamp'] as String,
-                );
+                final timestamp =
+                    DateTime.parse(activity['timestamp'] as String).toLocal();
                 final timeAgo = _formatTimeAgo(timestamp);
 
                 String title;

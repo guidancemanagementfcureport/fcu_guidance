@@ -46,7 +46,8 @@ class UserModel {
   final String gmail; // Gmail for login
   final UserRole role;
   final String fullName;
-  final StudentLevel? studentLevel; // For students: junior_high, senior_high, college
+  final StudentLevel?
+  studentLevel; // For students: junior_high, senior_high, college
   final String? course; // For college students
   final String? gradeLevel; // For junior high (7-10) or senior high (11-12)
   final String? strand; // For senior high students (STEM, HUMSS, ABM, GAS)
@@ -91,10 +92,10 @@ class UserModel {
       department: json['department'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       status: json['status'] as String? ?? 'active',
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
       lastLogin:
           json['last_login'] != null
-              ? DateTime.parse(json['last_login'] as String)
+              ? DateTime.parse(json['last_login'] as String).toLocal()
               : null,
     );
   }

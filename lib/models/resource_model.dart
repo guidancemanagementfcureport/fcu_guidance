@@ -33,8 +33,8 @@ class ResourceModel {
       fileType: ResourceFileType.fromString(json['file_type'] as String),
       category: json['category'] as String?,
       isPublic: json['is_public'] as bool? ?? true,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
     );
   }
 

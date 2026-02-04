@@ -534,7 +534,8 @@ class PdfExportService {
           final teacher = report['teacher'] as Map<String, dynamic>?;
           final counselor = report['counselor'] as Map<String, dynamic>?;
           final dean = report['dean'] as Map<String, dynamic>?;
-          final createdAt = DateTime.parse(report['created_at'] as String);
+          final createdAt =
+              DateTime.parse(report['created_at'] as String).toLocal();
           final status = ReportStatus.fromString(report['status'] as String);
 
           return pw.TableRow(

@@ -53,7 +53,7 @@ class ReportModel {
       attachmentUrl: json['attachment_url'] as String?,
       incidentDate:
           json['incident_date'] != null
-              ? DateTime.parse(json['incident_date'] as String)
+              ? DateTime.parse(json['incident_date'] as String).toLocal()
               : null,
       status: ReportStatus.fromString(json['status'] as String),
       isAnonymous: json['is_anonymous'] as bool? ?? false,
@@ -61,8 +61,8 @@ class ReportModel {
       teacherNote: json['teacher_note'] as String?,
       counselorNote: json['counselor_note'] as String?,
       deanNote: json['dean_note'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updated_at'] as String).toLocal(),
     );
   }
 

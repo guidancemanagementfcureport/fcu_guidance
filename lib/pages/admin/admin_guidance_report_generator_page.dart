@@ -115,7 +115,7 @@ class _AdminGuidanceReportGeneratorPageState
     final reportDate = DateFormat('MMMM dd, yyyy').format(DateTime.now());
     final sessionDate = DateFormat(
       'MMMM dd, yyyy',
-    ).format(DateTime.parse(widget.reportData['created_at']));
+    ).format(DateTime.parse(widget.reportData['created_at']).toLocal());
     final caseCode =
         widget.reportData['tracking_id'] ??
         widget.reportData['id'].toString().substring(0, 8).toUpperCase();
