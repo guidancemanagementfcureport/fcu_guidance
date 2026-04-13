@@ -11,7 +11,7 @@
 
 CREATE TABLE IF NOT EXISTS counseling_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  report_id UUID NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+  report_id UUID REFERENCES reports(id) ON DELETE CASCADE,
   student_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   counselor_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   dean_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,

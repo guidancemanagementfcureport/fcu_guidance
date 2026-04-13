@@ -21,7 +21,7 @@ create table if not exists public.users (
 
 -- Add comments for documentation
 COMMENT ON TABLE public.users IS 'User accounts for FCU Guidance Management System. Student level information is automatically used in the report workflow for conditional routing (College reports must go to Dean, SHS/JHS can be finalized by Counselor).';
-COMMENT ON COLUMN public.users.role IS 'User role: student, teacher, counselor, dean, or admin';
+COMMENT ON COLUMN public.users.role IS 'User role: student, teacher, counselor, dean, principal, assistant_principal, or admin';
 COMMENT ON COLUMN public.users.status IS 'Account status: active or inactive';
 COMMENT ON COLUMN public.users.department IS 'Department for teachers, counselors, deans, and admins';
 COMMENT ON COLUMN public.users.student_level IS 'Student academic level: junior_high, senior_high, or college. Used for conditional routing in report workflow - College reports require Dean approval, SHS/JHS can be finalized by Counselor.';
@@ -64,7 +64,7 @@ BEGIN
   -- Add updated constraint with Dean role
   ALTER TABLE public.users
   ADD CONSTRAINT users_role_check
-  CHECK (role IN ('student', 'teacher', 'counselor', 'dean', 'admin'));
+  CHECK (role IN ('student', 'teacher', 'counselor', 'dean', 'principal', 'assistant_principal', 'admin'));
   RAISE NOTICE 'Updated role check constraint';
 END $$;
 

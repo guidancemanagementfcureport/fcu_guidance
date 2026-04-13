@@ -532,6 +532,10 @@ class ResponsiveSidebarState extends State<ResponsiveSidebar> {
       case UserRole.dean:
         dashboardRoute = '/dean/dashboard';
         break;
+      case UserRole.principal:
+      case UserRole.assistantPrincipal:
+        dashboardRoute = '/principal/dashboard';
+        break;
       case UserRole.admin:
         dashboardRoute = '/admin/dashboard';
         break;
@@ -970,7 +974,7 @@ class ResponsiveSidebarState extends State<ResponsiveSidebar> {
           .length;
     }
 
-    if (menu.title == 'Report Review & Approval') {
+    if (menu.title == 'Report Review') {
       return unreadNotifications
           .where((n) => n.type == NotificationType.newReport)
           .map((n) => n.data['report_id'])
@@ -1086,3 +1090,4 @@ class ResponsiveSidebarState extends State<ResponsiveSidebar> {
     );
   }
 }
+

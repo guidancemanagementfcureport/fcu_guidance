@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS report_activity_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   report_id UUID NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
   actor_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role TEXT NOT NULL CHECK (role IN ('student', 'teacher', 'counselor', 'dean', 'admin')),
+  role TEXT NOT NULL CHECK (role IN ('student', 'teacher', 'counselor', 'dean', 'principal', 'assistant_principal', 'admin')),
   action TEXT NOT NULL,
   note TEXT,
   timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS report_activity_logs (
 COMMENT ON TABLE report_activity_logs IS 'Tracks all actions performed on reports (submitted, reviewed, forwarded, reviewed_and_forwarded_to_dean, accepted, confirmed)';
 COMMENT ON COLUMN report_activity_logs.report_id IS 'Reference to the report this activity log belongs to';
 COMMENT ON COLUMN report_activity_logs.actor_id IS 'User ID who performed the action';
-COMMENT ON COLUMN report_activity_logs.role IS 'Role of the user who performed the action: student, teacher, counselor, dean, admin';
+COMMENT ON COLUMN report_activity_logs.role IS 'Role of the user who performed the action: student, teacher, counselor, dean, principal, assistant_principal, admin';
 COMMENT ON COLUMN report_activity_logs.action IS 'Action performed: submitted, reviewed, forwarded, reviewed_and_forwarded_to_dean (for College reports forwarded to Dean), accepted, confirmed';
 COMMENT ON COLUMN report_activity_logs.note IS 'Optional comment or note from the actor';
 
@@ -265,7 +265,7 @@ BEGIN
   -- Add updated constraint with Dean role
   ALTER TABLE report_activity_logs
   ADD CONSTRAINT report_activity_logs_role_check
-  CHECK (role IN ('student', 'teacher', 'counselor', 'dean', 'admin'));
+  CHECK (role IN ('student', 'teacher', 'counselor', 'dean', 'principal', 'assistant_principal', 'admin'));
 END $$;
 
 -- ============================================

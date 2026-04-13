@@ -27,6 +27,7 @@ class _RequestCounselingPageState extends State<RequestCounselingPage> {
   final _supabase = SupabaseService();
   bool _isLoading = true;
   bool _isSubmitting = false;
+  bool _isPersonalRequest = false;
   List<ReportModel> _confirmedReports = [];
   ReportModel? _selectedReport;
 
@@ -159,8 +160,8 @@ class _RequestCounselingPageState extends State<RequestCounselingPage> {
 
   Future<void> _submitRequest() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedReport == null) {
-      ToastUtils.showWarning(context, 'Please select a confirmed report');
+    if (!_isPersonalRequest && _selectedReport == null) {
+      ToastUtils.showWarning(context, 'Please select a confirmed report or mark as personal request');
       return;
     }
 
@@ -178,7 +179,7 @@ class _RequestCounselingPageState extends State<RequestCounselingPage> {
 
       await _supabase.createCounselingRequest(
         studentId: studentId,
-        reportId: _selectedReport!.id,
+        reportId: _isPersonalRequest ? null : _selectedReport!.id,
         reason:
             _reasonController.text.trim().isEmpty
                 ? null
@@ -303,7 +304,7 @@ class _RequestCounselingPageState extends State<RequestCounselingPage> {
                                           ),
                                           const SizedBox(height: 12),
                                           Text(
-                                            'Request counseling support for a report approved by Dean. You can schedule your session and choose who will attend.',
+                                            'Request counseling support. You can schedule a session related to an incident report, or request personal counseling.',
                                             style: TextStyle(
                                               fontSize: 15,
                                               color: AppTheme.mediumGray,
@@ -336,12 +337,35 @@ class _RequestCounselingPageState extends State<RequestCounselingPage> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.stretch,
                                           children: [
-                                            // Select Report Section
-                                            _buildSectionLabel(
-                                              'Select Approved Report',
+                                            // Personal Request Toggle
+                                            Container(
+                                              margin: const EdgeInsets.only(bottom: 24),
+                                              decoration: BoxDecoration(
+                                                border: Border.all(color: AppTheme.lightBlue.withAlpha(77)),
+                                                borderRadius: BorderRadius.circular(16),
+                                              ),
+                                              child: SwitchListTile(
+                                                title: const Text('Personal Counseling Request', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.deepBlue)),
+                                                subtitle: const Text('I want to talk to a counselor about a personal issue (no incident report needed)', style: TextStyle(fontSize: 13, color: AppTheme.mediumGray)),
+                                                value: _isPersonalRequest,
+                                                onChanged: (val) {
+                                                  setState(() {
+                                                    _isPersonalRequest = val;
+                                                    if (val) _selectedReport = null;
+                                                  });
+                                                },
+                                                thumbColor: WidgetStateProperty.all(AppTheme.warningOrange),
+                                                activeTrackColor: AppTheme.warningOrange.withAlpha(50),
+                                              ),
                                             ),
-                                            const SizedBox(height: 16),
-                                            if (_confirmedReports.isEmpty)
+
+                                            // Select Report Section (Only if not personal request)
+                                            if (!_isPersonalRequest) ...[
+                                              _buildSectionLabel(
+                                                'Select Eligible Report',
+                                              ),
+                                              const SizedBox(height: 16),
+                                              if (_confirmedReports.isEmpty)
                                               Container(
                                                 padding: const EdgeInsets.all(
                                                   24,
@@ -362,7 +386,7 @@ class _RequestCounselingPageState extends State<RequestCounselingPage> {
                                                     ),
                                                     const SizedBox(height: 16),
                                                     Text(
-                                                      'No Approved Reports',
+                                                      'No Eligible Reports',
                                                       style: TextStyle(
                                                         fontSize: 18,
                                                         fontWeight:
@@ -373,7 +397,7 @@ class _RequestCounselingPageState extends State<RequestCounselingPage> {
                                                     ),
                                                     const SizedBox(height: 8),
                                                     Text(
-                                                      'You can only request counseling for reports that have been approved by the Dean. Please wait for your report to be approved first.',
+                                                      'You can only request counseling for reports eligible for counseling. Please wait until your report is reviewed.',
                                                       style: TextStyle(
                                                         fontSize: 14,
                                                         color:
@@ -512,7 +536,7 @@ class _RequestCounselingPageState extends State<RequestCounselingPage> {
                                                                   height: 4,
                                                                 ),
                                                                 Text(
-                                                                  'Approved: ${DateFormat('MMM dd, yyyy').format(report.updatedAt)}',
+                                                                  'Reviewed: ${DateFormat('MMM dd, yyyy').format(report.updatedAt)}',
                                                                   style: TextStyle(
                                                                     fontSize:
                                                                         12,
@@ -538,6 +562,7 @@ class _RequestCounselingPageState extends State<RequestCounselingPage> {
                                                   ),
                                                 );
                                               }),
+                                            ],
 
                                             const SizedBox(height: 32),
 
@@ -1000,8 +1025,7 @@ class _RequestCounselingPageState extends State<RequestCounselingPage> {
                                               child: ElevatedButton(
                                                 onPressed:
                                                     _isSubmitting ||
-                                                            _confirmedReports
-                                                                .isEmpty
+                                                            (!_isPersonalRequest && _confirmedReports.isEmpty)
                                                         ? null
                                                         : _submitRequest,
                                                 style: ElevatedButton.styleFrom(

@@ -647,6 +647,8 @@ class _UserManagementPageState extends State<UserManagementPage> {
       case UserRole.counselor:
         return AppTheme.warningOrange;
       case UserRole.dean:
+      case UserRole.principal:
+      case UserRole.assistantPrincipal:
         return const Color(0xFF4C1D95); // Deep indigo
       case UserRole.admin:
         return AppTheme.errorRed;

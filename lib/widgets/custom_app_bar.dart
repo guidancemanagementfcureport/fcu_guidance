@@ -167,10 +167,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       case UserRole.counselor:
         return Icons.psychology_rounded;
       case UserRole.dean:
+      case UserRole.principal:
+      case UserRole.assistantPrincipal:
         return Icons.account_balance_rounded;
       case UserRole.admin:
         return Icons.admin_panel_settings_rounded;
     }
   }
 }
-

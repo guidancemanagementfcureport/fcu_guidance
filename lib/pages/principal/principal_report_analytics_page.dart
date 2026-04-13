@@ -11,15 +11,15 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user_model.dart';
 
-class DeanReportAnalyticsPage extends StatefulWidget {
-  const DeanReportAnalyticsPage({super.key});
+class PrincipalReportAnalyticsPage extends StatefulWidget {
+  const PrincipalReportAnalyticsPage({super.key});
 
   @override
-  State<DeanReportAnalyticsPage> createState() =>
-      _DeanReportAnalyticsPageState();
+  State<PrincipalReportAnalyticsPage> createState() =>
+      _PrincipalReportAnalyticsPageState();
 }
 
-class _DeanReportAnalyticsPageState extends State<DeanReportAnalyticsPage> {
+class _PrincipalReportAnalyticsPageState extends State<PrincipalReportAnalyticsPage> {
   final SupabaseService _supabase = SupabaseService();
 
   bool _isLoading = true;
@@ -60,8 +60,8 @@ class _DeanReportAnalyticsPageState extends State<DeanReportAnalyticsPage> {
   }
 
   bool _isCounselorForwardedReport(Map<String, dynamic> report) {
-    // Dean/Principal analytics should only include counselor-forwarded records.
     final statusStr = (report['status'] as String?)?.toLowerCase() ?? '';
+    // Dean/Principal analytics should only include counselor-forwarded records.
     return statusStr == 'counselor_reviewed';
   }
 
@@ -98,6 +98,20 @@ class _DeanReportAnalyticsPageState extends State<DeanReportAnalyticsPage> {
       }
       return true;
     }).toList();
+  }
+
+  List<DropdownMenuItem<String>> _buildUniqueStudentFieldItems(String field) {
+    final values = <String>{};
+    for (final report in _allReports) {
+      final student = report['student'] as Map<String, dynamic>?;
+      final raw = student?[field]?.toString().trim();
+      if (raw != null && raw.isNotEmpty) values.add(raw);
+    }
+    final sorted = values.toList()..sort();
+    return [
+      const DropdownMenuItem(value: null, child: Text('All')),
+      ...sorted.map((v) => DropdownMenuItem(value: v, child: Text(v))),
+    ];
   }
 
   Future<void> _loadData() async {
@@ -443,7 +457,32 @@ class _DeanReportAnalyticsPageState extends State<DeanReportAnalyticsPage> {
                         );
                       }
 
-                      return const SizedBox.shrink();
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: [
+                          _buildModernDropdown(
+                            label: 'Course',
+                            value: _selectedCourse,
+                            items: _buildUniqueStudentFieldItems('course'),
+                            onChanged: (v) {
+                              setState(() => _selectedCourse = v);
+                              _applyFilters();
+                            },
+                            width: isNarrow ? double.infinity : 220,
+                          ),
+                          _buildModernDropdown(
+                            label: 'Year Level',
+                            value: _selectedYearLevel,
+                            items: _buildUniqueStudentFieldItems('year_level'),
+                            onChanged: (v) {
+                              setState(() => _selectedYearLevel = v);
+                              _applyFilters();
+                            },
+                            width: isNarrow ? double.infinity : 220,
+                          ),
+                        ],
+                      );
                     },
                   ),
                 ],

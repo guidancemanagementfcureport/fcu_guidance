@@ -332,6 +332,10 @@ class _HomePageState extends State<HomePage> {
                         case UserRole.dean:
                           path = '/dean/dashboard';
                           break;
+                        case UserRole.principal:
+                        case UserRole.assistantPrincipal:
+                          path = '/principal/dashboard';
+                          break;
                         case UserRole.admin:
                           path = '/admin/dashboard';
                           break;
@@ -1990,6 +1994,12 @@ class _HomePageState extends State<HomePage> {
                           path = '/counselor/dashboard';
                           break;
                         case UserRole.dean:
+                          path = '/dean/dashboard';
+                          break;
+                        case UserRole.principal:
+                        case UserRole.assistantPrincipal:
+                          path = '/principal/dashboard';
+                          break;
                         case UserRole.admin:
                           path = '/admin/dashboard';
                           break;
@@ -2057,3 +2067,4 @@ class _NavigationBarDelegate extends SliverPersistentHeaderDelegate {
     return oldDelegate.child != child || oldDelegate.isScrolled != isScrolled;
   }
 }
+

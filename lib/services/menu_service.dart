@@ -8,6 +8,8 @@ class MenuService {
     UserRole.teacher: _teacherMenus,
     UserRole.counselor: _counselorMenus,
     UserRole.dean: _deanMenus,
+    UserRole.principal: _principalMenus,
+    UserRole.assistantPrincipal: _principalMenus,
     UserRole.admin: _adminMenus,
   };
 
@@ -136,19 +138,28 @@ class MenuService {
       route: '/dean/dashboard',
     ),
     MenuItem(
-      title: 'Report Review & Approval',
+      title: 'Report Review',
       icon: Icons.assignment_outlined,
       route: '/dean/reports',
     ),
     MenuItem(
-      title: 'Messages report',
-      icon: Icons.chat_bubble_outline,
-      route: '/dean/communication',
+      title: 'Profile',
+      icon: Icons.person_outline,
+      route: '/admin/profile-management',
+    ),
+  ];
+
+  // Principal Menu Items
+  static const List<MenuItem> _principalMenus = [
+    MenuItem(
+      title: 'Dashboard',
+      icon: Icons.dashboard_outlined,
+      route: '/principal/dashboard',
     ),
     MenuItem(
-      title: 'Report Analytics',
-      icon: Icons.analytics_outlined,
-      route: '/dean/analytics',
+      title: 'Report Review',
+      icon: Icons.assignment_outlined,
+      route: '/principal/reports',
     ),
     MenuItem(
       title: 'Profile',

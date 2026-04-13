@@ -35,6 +35,7 @@ class _CommunicationToolsPageState extends State<CommunicationToolsPage> {
   List<ReportModel> _filteredCases = [];
   List<ReportModel> _allCases = [];
   ReportModel? _selectedCase;
+  String _selectedCategory = 'All';
   List<CaseMessageModel> _messages = [];
   final Map<String, UserModel> _userCache = {};
 
@@ -95,9 +96,9 @@ class _CommunicationToolsPageState extends State<CommunicationToolsPage> {
         regularReports = await _supabase.getReportsWithFilters(
           counselorId: user.id,
         );
-      } else if (user.role == UserRole.dean) {
-        // Dean sees only College reports
-        regularReports = await _supabase.getDeanReports();
+      } else if (user.role == UserRole.dean || user.role == UserRole.principal || user.role == UserRole.assistantPrincipal) {
+        // Dean/Principal views
+        regularReports = await _supabase.getDeanReports(role: user.role);
       } else if (user.role == UserRole.admin) {
         regularReports = await _supabase.getReportsWithFilters(deanId: user.id);
       }
@@ -112,7 +113,7 @@ class _CommunicationToolsPageState extends State<CommunicationToolsPage> {
         anonymousReportsRaw = await _supabase.getCounselorAnonymousReports(
           user.id,
         );
-      } else if (user.role == UserRole.dean) {
+      } else if (user.role == UserRole.dean || user.role == UserRole.principal || user.role == UserRole.assistantPrincipal) {
         // Dean sees ONLY college anonymous reports... but since they are anonymous,
         // we can't filter by student level directly unless we track it or infer it.
         // Assuming strictly College oversight: Filter by NO counselor or College counselor maybe?
@@ -196,8 +197,8 @@ class _CommunicationToolsPageState extends State<CommunicationToolsPage> {
             );
           }).toList();
 
-      if (user.role == UserRole.dean) {
-        // Filter support reports: must have a studentId and the student must be college
+      if (user.role == UserRole.dean || user.role == UserRole.principal || user.role == UserRole.assistantPrincipal) {
+        // Filter support reports: must have a studentId and the student must match level
         // We need to fetch student levels for these sessions
         final studentIds =
             supportReports
@@ -207,14 +208,16 @@ class _CommunicationToolsPageState extends State<CommunicationToolsPage> {
                 .toList();
         if (studentIds.isNotEmpty) {
           final collegeUsers = await _supabase.getUsersByIds(studentIds);
-          // Filter only those who are college
-          final collegeIds =
+          // Filter based on user role
+          final targetIds =
               collegeUsers
-                  .where(
-                    (u) =>
-                        u.studentLevel != null &&
-                        u.studentLevel == StudentLevel.college,
-                  )
+                  .where((u) {
+                    if (u.studentLevel == null) return false;
+                    if (user.role == UserRole.principal || user.role == UserRole.assistantPrincipal) {
+                      return u.studentLevel == StudentLevel.juniorHigh || u.studentLevel == StudentLevel.seniorHigh;
+                    }
+                    return u.studentLevel == StudentLevel.college;
+                  })
                   .map((u) => u.id)
                   .toSet();
 
@@ -222,7 +225,7 @@ class _CommunicationToolsPageState extends State<CommunicationToolsPage> {
               supportReports
                   .where(
                     (r) =>
-                        r.studentId != null && collegeIds.contains(r.studentId),
+                        r.studentId != null && targetIds.contains(r.studentId),
                   )
                   .toList();
         } else {
@@ -252,12 +255,8 @@ class _CommunicationToolsPageState extends State<CommunicationToolsPage> {
           }
 
           _allCases.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          _filteredCases = _allCases;
-
-          if (_selectedCase == null && _allCases.isNotEmpty) {
-            _selectCase(_allCases.first);
-          }
         });
+        _applyFilters();
       }
     } catch (e) {
       if (mounted) {
@@ -490,19 +489,79 @@ class _CommunicationToolsPageState extends State<CommunicationToolsPage> {
     }
   }
 
-  void _onSearchChanged(String value) {
-    final query = value.toLowerCase();
+  void _applyFilters() {
+    final query = _searchController.text.toLowerCase();
     setState(() {
-      _filteredCases =
-          _allCases.where((c) {
-            final title = c.title.toLowerCase();
-            final type = c.type.toLowerCase();
-            final status = c.status.toString().toLowerCase();
-            return title.contains(query) ||
-                type.contains(query) ||
-                status.contains(query);
-          }).toList();
+      _filteredCases = _allCases.where((c) {
+        final title = c.title.toLowerCase();
+        final type = c.type.toLowerCase();
+        final status = c.status.toString().toLowerCase();
+        final matchesSearch = title.contains(query) ||
+            type.contains(query) ||
+            status.contains(query);
+
+        if (!matchesSearch) return false;
+
+        if (_selectedCategory == 'Students') {
+          return !c.isAnonymous;
+        } else if (_selectedCategory == 'Anonymous') {
+          return c.isAnonymous;
+        }
+        return true;
+      }).toList();
+      
+      if (!_filteredCases.any((c) => c.id == _selectedCase?.id)) {
+        if (_filteredCases.isNotEmpty) {
+          _selectCase(_filteredCases.first);
+        } else {
+          _selectedCase = null;
+        }
+      }
     });
+  }
+
+  void _onSearchChanged(String value) {
+    _applyFilters();
+  }
+
+  Widget _buildCategoryTab(String label, String value) {
+    final isSelected = _selectedCategory == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedCategory = value;
+          });
+          _applyFilters();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.skyBlue : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppTheme.skyBlue.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppTheme.mediumGray,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   String _formatTimestamp(DateTime time) {
@@ -650,6 +709,20 @@ class _CommunicationToolsPageState extends State<CommunicationToolsPage> {
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: AppTheme.lightGray.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  _buildCategoryTab('All', 'All'),
+                  _buildCategoryTab('Students', 'Students'),
+                  _buildCategoryTab('Anonymous', 'Anonymous'),
+                ],
               ),
             ),
             const SizedBox(height: 12),

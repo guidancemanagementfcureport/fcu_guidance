@@ -955,6 +955,100 @@ class SupabaseService {
     return report;
   }
 
+  /// Create a counselor-forwarded copy of a settled report for oversight
+  /// (Principal/Assistant Principal for JHS-SHS, Dean for College).
+  Future<ReportModel> createSettledReportForwardCopy({
+    required ReportModel sourceReport,
+    required String counselorId,
+    required String targetOversightUserId,
+    required UserRole targetRole,
+  }) async {
+    final sourceMarker = '(source report: ${sourceReport.id})';
+    final forwardNote =
+        '${sourceReport.counselorNote ?? ''}\n\n'
+        'Forwarded copy from settled counseling record '
+        '$sourceMarker '
+        'to ${targetRole.displayName}.'.trim();
+
+    // Avoid duplicate forwarded records: reuse existing forwarded copy for
+    // the same source report and target account, then refresh timestamp/status.
+    dynamic existingQuery =
+        _client
+            .from('reports')
+            .select()
+            .eq('dean_id', targetOversightUserId)
+            .ilike('counselor_note', '%source report: ${sourceReport.id}%');
+    if (sourceReport.studentId != null) {
+      existingQuery = existingQuery.eq('student_id', sourceReport.studentId!);
+    }
+    final existing = await existingQuery.maybeSingle();
+
+    if (existing != null) {
+      final updatedResponse =
+          await _client
+              .from('reports')
+              .update({
+                // Forwarded oversight copy should always be shown as settled.
+                'status': ReportStatus.settled.toString(),
+                'updated_at': DateTime.now().toIso8601String(),
+                'counselor_note': forwardNote,
+              })
+              .eq('id', existing['id'] as String)
+              .select()
+              .single();
+
+      final updatedReport = ReportModel.fromJson(updatedResponse);
+
+      await createReportActivityLog(
+        reportId: updatedReport.id,
+        actorId: counselorId,
+        role: 'counselor',
+        action: 'forwarded',
+        note:
+            'Refreshed forwarded settled report copy to ${targetRole.displayName} '
+            '$sourceMarker',
+      );
+
+      return updatedReport;
+    }
+
+    final reportData = <String, dynamic>{
+      'student_id': sourceReport.studentId,
+      'teacher_id': sourceReport.teacherId,
+      'counselor_id': counselorId,
+      // The same column is used for oversight account assignment.
+      'dean_id': targetOversightUserId,
+      'title': sourceReport.title,
+      'type': sourceReport.type,
+      'details': sourceReport.details,
+      'attachment_url': sourceReport.attachmentUrl,
+      'incident_date': sourceReport.incidentDate?.toIso8601String(),
+      // Forwarded oversight copy should be shown as settled.
+      'status': ReportStatus.settled.toString(),
+      'is_anonymous': sourceReport.isAnonymous,
+      'teacher_note': sourceReport.teacherNote,
+      'counselor_note': forwardNote,
+      'dean_note': null,
+    };
+
+    final response =
+        await _client.from('reports').insert(reportData).select().single();
+
+    final copiedReport = ReportModel.fromJson(response);
+
+    await createReportActivityLog(
+      reportId: copiedReport.id,
+      actorId: counselorId,
+      role: 'counselor',
+      action: 'forwarded',
+      note:
+          'Forwarded settled report copy to ${targetRole.displayName} '
+          '$sourceMarker',
+    );
+
+    return copiedReport;
+  }
+
   /// Create anonymous report (no authentication required)
   /// Note: This requires RLS policies to allow anonymous inserts
   /// For production, consider using a Supabase Edge Function
@@ -1512,7 +1606,7 @@ class SupabaseService {
   }
 
   /// Get reports for Dean (only College students with relevant statuses)
-  Future<List<ReportModel>> getDeanReports() async {
+  Future<List<ReportModel>> getDeanReports({UserRole? role}) async {
     try {
       // 1. Fetch reports with statuses relevant to Dean
       final response = await _client
@@ -1522,6 +1616,9 @@ class SupabaseService {
             'counselor_reviewed',
             'approved_by_dean',
             'counseling_scheduled',
+            // Forwarded settled copies + any subsequently completed records
+            'settled',
+            'completed',
           ])
           .order('created_at', ascending: false);
 
@@ -1552,7 +1649,11 @@ class SupabaseService {
           (studentsResponse as List)
               .where((json) {
                 final level = json['student_level'] as String?;
-                return level != null && level.toLowerCase() == 'college';
+                if (level == null) return false;
+                if (role == UserRole.principal || role == UserRole.assistantPrincipal) {
+                  return level.toLowerCase() == 'junior_high' || level.toLowerCase() == 'senior_high';
+                }
+                return level.toLowerCase() == 'college';
               })
               .map((json) => json['id'] as String)
               .toSet();
@@ -1566,6 +1667,66 @@ class SupabaseService {
           .toList();
     } catch (e) {
       debugPrint('getDeanReports error: $e');
+      return [];
+    }
+  }
+
+  /// Counselor-forwarded settled copies assigned to this dean/principal (`dean_id`).
+  /// Returns rows updated within [recentWithin], newest first, scoped to the role's student level.
+  Future<List<ReportModel>> getRecentCounselorForwardedCopiesForOversight({
+    required String oversightUserId,
+    UserRole? role,
+    Duration recentWithin = const Duration(days: 30),
+  }) async {
+    try {
+      final response = await _client
+          .from('reports')
+          .select()
+          .eq('dean_id', oversightUserId)
+          .ilike('counselor_note', '%Forwarded copy from settled counseling%')
+          .order('updated_at', ascending: false);
+
+      final all =
+          (response as List)
+              .map((json) => ReportModel.fromJson(json as Map<String, dynamic>))
+              .toList();
+
+      final cutoff = DateTime.now().subtract(recentWithin);
+      var filtered =
+          all.where((r) => !r.updatedAt.isBefore(cutoff)).toList();
+
+      if (role == null || filtered.isEmpty) return filtered;
+
+      final studentIds =
+          filtered.map((r) => r.studentId).whereType<String>().toSet().toList();
+      if (studentIds.isEmpty) return filtered;
+
+      final studentsResponse = await _client
+          .from('users')
+          .select('id, student_level')
+          .inFilter('id', studentIds);
+
+      final allowedIds =
+          (studentsResponse as List)
+              .where((json) {
+                final level = (json['student_level'] as String?)?.toLowerCase();
+                if (level == null) return false;
+                if (role == UserRole.principal ||
+                    role == UserRole.assistantPrincipal) {
+                  return level == 'junior_high' || level == 'senior_high';
+                }
+                return level == 'college';
+              })
+              .map((json) => json['id'] as String)
+              .toSet();
+
+      return filtered
+          .where(
+            (r) => r.studentId != null && allowedIds.contains(r.studentId),
+          )
+          .toList();
+    } catch (e) {
+      debugPrint('getRecentCounselorForwardedCopiesForOversight error: $e');
       return [];
     }
   }
@@ -2027,7 +2188,7 @@ class SupabaseService {
 
   Future<CounselingRequestModel> createCounselingRequest({
     required String studentId,
-    required String reportId,
+    String? reportId,
     String? reason,
     String? preferredTime,
     String? requestDetails,
@@ -2038,32 +2199,24 @@ class SupabaseService {
     String? counselorId,
     List<Map<String, dynamic>>? participants,
   }) async {
-    // Verify that the report is approved
-    final report = await getReportById(reportId);
-    if (report == null) {
-      throw Exception('Report not found');
-    }
+    if (reportId != null) {
+      // Verify that the report is approved
+      final report = await getReportById(reportId);
+      if (report == null) {
+        throw Exception('Report not found');
+      }
 
-    // Check student level for approval requirements
-    final user = await getUserById(studentId);
-    final isHighSchool =
-        user?.studentLevel == StudentLevel.juniorHigh ||
-        user?.studentLevel == StudentLevel.seniorHigh;
+      // Allow counseling requests for counselor-finalized or dean-approved reports.
+      final isEligible =
+          report.status == ReportStatus.approvedByDean ||
+          report.status == ReportStatus.counselorConfirmed ||
+          report.status == ReportStatus.counselorReviewed;
 
-    bool isApproved = false;
-    if (report.status == ReportStatus.approvedByDean) {
-      isApproved = true;
-    } else if (isHighSchool &&
-        report.status == ReportStatus.counselorConfirmed) {
-      isApproved = true;
-    }
-
-    if (!isApproved) {
-      throw Exception(
-        isHighSchool
-            ? 'Counseling can only be requested for reports approved by Dean or confirmed by Counselor'
-            : 'Counseling can only be requested for reports approved by Dean',
-      );
+      if (!isEligible) {
+        throw Exception(
+          'Counseling can only be requested for reports confirmed or reviewed by Counselor, or approved by Dean',
+        );
+      }
     }
 
     final insertData = <String, dynamic>{
@@ -2105,11 +2258,13 @@ class SupabaseService {
 
     final counselingRequest = CounselingRequestModel.fromJson(response);
 
-    // Update report status to counseling_scheduled
-    await _client
-        .from('reports')
-        .update({'status': 'counseling_scheduled'})
-        .eq('id', reportId);
+    if (reportId != null) {
+      // Update report status to counseling_scheduled
+      await _client
+          .from('reports')
+          .update({'status': 'counseling_scheduled'})
+          .eq('id', reportId);
+    }
 
     // Log the request activity
     await createCounselingActivityLog(
@@ -2119,14 +2274,16 @@ class SupabaseService {
       note: reason ?? 'Counseling session requested and scheduled by student.',
     );
 
-    // Also create a report-level activity log
-    await createReportActivityLog(
-      reportId: reportId,
-      actorId: studentId,
-      role: 'student',
-      action: 'counseling_requested',
-      note: 'Student has requested and scheduled a counseling session.',
-    );
+    if (reportId != null) {
+      // Also create a report-level activity log
+      await createReportActivityLog(
+        reportId: reportId,
+        actorId: studentId,
+        role: 'student',
+        action: 'counseling_requested',
+        note: 'Student has requested and scheduled a counseling session.',
+      );
+    }
 
     return counselingRequest;
   }
@@ -2252,12 +2409,17 @@ class SupabaseService {
       final isHighSchool =
           user?.studentLevel == StudentLevel.juniorHigh ||
           user?.studentLevel == StudentLevel.seniorHigh;
+      final isCollege = user?.studentLevel == StudentLevel.college;
 
       // Build status filter
-      // College: Approved by Dean only
+      // College: Counselor reviewed/finalized OR approved by Dean
       // High School: Approved by Dean OR Counselor Confirmed
       final statuses = <String>['approved_by_dean'];
       if (isHighSchool) {
+        statuses.add('counselor_confirmed');
+      }
+      if (isCollege) {
+        statuses.add('counselor_reviewed');
         statuses.add('counselor_confirmed');
       }
 

@@ -70,7 +70,7 @@ class NotificationProvider with ChangeNotifier {
           _notifications
               .where((n) => !n.isRead && n.type == NotificationType.newMessage)
               .toList();
-    } else if (route == '/counselor/communication') {
+    } else if (route == '/counselor/communication' || route == '/principal/communication') {
       toMark =
           _notifications
               .where((n) => !n.isRead && n.type == NotificationType.newMessage)
@@ -80,7 +80,7 @@ class NotificationProvider with ChangeNotifier {
           _notifications
               .where((n) => !n.isRead && n.type == NotificationType.newReport)
               .toList();
-    } else if (route == '/dean/reports') {
+    } else if (route == '/dean/reports' || route == '/principal/reports') {
       toMark =
           _notifications
               .where((n) => !n.isRead && n.type == NotificationType.newReport)

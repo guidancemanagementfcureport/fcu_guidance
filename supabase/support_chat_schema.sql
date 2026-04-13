@@ -38,7 +38,7 @@ ALTER TABLE public.support_messages ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view their own support sessions"
 ON public.support_sessions FOR SELECT
 USING (auth.uid() = student_id OR student_id IS NULL OR EXISTS (
-    SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('teacher', 'counselor', 'dean', 'admin')
+    SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('teacher', 'counselor', 'dean', 'principal', 'assistant_principal', 'admin')
 ));
 
 -- Allow students and anonymous users to create sessions
@@ -50,7 +50,7 @@ WITH CHECK (true);
 CREATE POLICY "Staff can update support sessions"
 ON public.support_sessions FOR UPDATE
 USING (EXISTS (
-    SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('teacher', 'counselor', 'dean', 'admin')
+    SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('teacher', 'counselor', 'dean', 'principal', 'assistant_principal', 'admin')
 ));
 
 -- Messages: Users see messages for their sessions, Staff see all
@@ -58,7 +58,7 @@ CREATE POLICY "Users can view messages for their support sessions"
 ON public.support_messages FOR SELECT
 USING (EXISTS (
     SELECT 1 FROM public.support_sessions WHERE id = session_id AND (student_id = auth.uid() OR student_id IS NULL OR EXISTS (
-        SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('teacher', 'counselor', 'dean', 'admin')
+        SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('teacher', 'counselor', 'dean', 'principal', 'assistant_principal', 'admin')
     ))
 ));
 
@@ -73,7 +73,7 @@ WITH CHECK (EXISTS (
 CREATE POLICY "Staff can reply to any support session"
 ON public.support_messages FOR INSERT
 WITH CHECK (EXISTS (
-    SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('teacher', 'counselor', 'dean', 'admin')
+    SELECT 1 FROM public.users WHERE id = auth.uid() AND role IN ('teacher', 'counselor', 'dean', 'principal', 'assistant_principal', 'admin')
 ));
 
 -- Enable real-time for support messages

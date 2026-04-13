@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 // import 'dart:typed_data';
 import '../../providers/auth_provider.dart';
 import '../../services/supabase_service.dart';
@@ -20,12 +21,26 @@ class SubmitReportPage extends StatefulWidget {
 }
 
 class _SubmitReportPageState extends State<SubmitReportPage> {
+  static const Set<String> _allowedAttachmentExtensions = {
+    'pdf',
+    'jpg',
+    'jpeg',
+    'png',
+    'doc',
+    'docx',
+    'mp4',
+    'mov',
+    'avi',
+    'mkv',
+  };
+
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _detailsController = TextEditingController();
 
   final _supabase = SupabaseService();
   bool _isLoading = false;
+  bool _attachmentDropHover = false;
   String? _selectedType;
   DateTime? _incidentDate;
   final List<PlatformFile> _selectedFiles = [];
@@ -138,22 +153,80 @@ class _SubmitReportPageState extends State<SubmitReportPage> {
     }
   }
 
+  bool _isAllowedAttachmentName(String fileName) {
+    final dot = fileName.lastIndexOf('.');
+    if (dot <= 0 || dot >= fileName.length - 1) return false;
+    final ext = fileName.substring(dot + 1).toLowerCase();
+    return _allowedAttachmentExtensions.contains(ext);
+  }
+
+  List<DropItem> _expandDropItems(List<DropItem> items) {
+    final out = <DropItem>[];
+    for (final item in items) {
+      if (item is DropItemDirectory) {
+        out.addAll(_expandDropItems(item.children));
+      } else {
+        out.add(item);
+      }
+    }
+    return out;
+  }
+
+  Future<void> _handleDroppedFiles(DropDoneDetails details) async {
+    if (!mounted || _selectedFiles.length >= 3) return;
+
+    final expanded = _expandDropItems(details.files);
+    final validItems = <DropItem>[];
+    for (final item in expanded) {
+      if (!_isAllowedAttachmentName(item.name)) {
+        if (mounted) {
+          ToastUtils.showWarning(
+            context,
+            'File type not allowed: ${item.name}',
+          );
+        }
+        continue;
+      }
+      validItems.add(item);
+    }
+    if (validItems.isEmpty) return;
+
+    if (_selectedFiles.length + validItems.length > 3) {
+      if (mounted) {
+        ToastUtils.showWarning(
+          context,
+          'You can only attach up to 3 files.',
+        );
+      }
+      return;
+    }
+
+    final toAdd = <PlatformFile>[];
+    for (final item in validItems) {
+      try {
+        final bytes = await item.readAsBytes();
+        toAdd.add(
+          PlatformFile(
+            name: item.name,
+            size: bytes.length,
+            bytes: bytes,
+          ),
+        );
+      } catch (e) {
+        if (mounted) {
+          ToastUtils.showError(context, 'Could not read file: ${item.name}');
+        }
+      }
+    }
+    if (toAdd.isEmpty || !mounted) return;
+    setState(() => _selectedFiles.addAll(toAdd));
+  }
+
   Future<void> _pickFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: [
-          'pdf',
-          'jpg',
-          'jpeg',
-          'png',
-          'doc',
-          'docx',
-          'mp4',
-          'mov',
-          'avi',
-          'mkv',
-        ],
+        allowedExtensions: _allowedAttachmentExtensions.toList(),
         allowMultiple: true,
         withData: true,
       );
@@ -1024,124 +1097,167 @@ class _SubmitReportPageState extends State<SubmitReportPage> {
                                             ) {
                                               final index = entry.key;
                                               final file = entry.value;
-                                              return Container(
-                                                margin: const EdgeInsets.only(
-                                                  bottom: 12,
-                                                ),
-                                                padding: const EdgeInsets.all(
-                                                  16,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  gradient: LinearGradient(
-                                                    colors: [
-                                                      AppTheme.successGreen
-                                                          .withAlpha(13),
-                                                      AppTheme.successGreen
-                                                          .withAlpha(13),
-                                                    ],
-                                                  ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                  border: Border.all(
-                                                    color: AppTheme.successGreen
-                                                        .withAlpha(77),
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    Container(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                            10,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: AppTheme
-                                                            .successGreen
-                                                            .withAlpha(38),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
-                                                            ),
-                                                      ),
-                                                      child: const Icon(
-                                                        Icons
-                                                            .attach_file_rounded,
-                                                        color:
-                                                            AppTheme
-                                                                .successGreen,
-                                                        size: 24,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 16),
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
+                                              final ext = file.name.split('.').last.toLowerCase();
+                                              final isImage = ['jpg', 'jpeg', 'png'].contains(ext) && file.bytes != null;
+                                              
+                                              return GestureDetector(
+                                                onTap: isImage ? () {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder: (context) => Dialog(
+                                                      backgroundColor: Colors.transparent,
+                                                      insetPadding: const EdgeInsets.all(16),
+                                                      child: Stack(
+                                                        clipBehavior: Clip.none,
+                                                        alignment: Alignment.center,
                                                         children: [
-                                                          Text(
-                                                            file.name,
-                                                            style: const TextStyle(
-                                                              fontSize: 14,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              color:
-                                                                  AppTheme
-                                                                      .darkGray,
+                                                          InteractiveViewer(
+                                                            maxScale: 5.0,
+                                                            child: Image.memory(
+                                                              file.bytes!,
+                                                              fit: BoxFit.contain,
                                                             ),
-                                                            maxLines: 1,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
                                                           ),
-                                                          const SizedBox(
-                                                            height: 4,
-                                                          ),
-                                                          Text(
-                                                            '${(file.size / 1024).toStringAsFixed(1)} KB',
-                                                            style: TextStyle(
-                                                              fontSize: 12,
-                                                              color:
-                                                                  AppTheme
-                                                                      .mediumGray,
+                                                          Positioned(
+                                                            top: -16,
+                                                            right: -16,
+                                                            child: IconButton(
+                                                              icon: Container(
+                                                                padding: const EdgeInsets.all(8),
+                                                                decoration: const BoxDecoration(
+                                                                  color: Colors.black54,
+                                                                  shape: BoxShape.circle,
+                                                                ),
+                                                                child: const Icon(Icons.close, color: Colors.white, size: 20),
+                                                              ),
+                                                              onPressed: () => Navigator.pop(context),
                                                             ),
                                                           ),
                                                         ],
                                                       ),
                                                     ),
-                                                    IconButton(
-                                                      icon: Container(
+                                                  );
+                                                } : null,
+                                                child: Container(
+                                                  margin: const EdgeInsets.only(
+                                                    bottom: 12,
+                                                  ),
+                                                  padding: const EdgeInsets.all(
+                                                    16,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      colors: [
+                                                        AppTheme.successGreen
+                                                            .withAlpha(13),
+                                                        AppTheme.successGreen
+                                                            .withAlpha(13),
+                                                      ],
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(12),
+                                                    border: Border.all(
+                                                      color: AppTheme.successGreen
+                                                          .withAlpha(77),
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Container(
                                                         padding:
                                                             const EdgeInsets.all(
-                                                              6,
+                                                              10,
                                                             ),
-                                                        decoration:
-                                                            BoxDecoration(
-                                                              color: AppTheme
-                                                                  .errorRed
-                                                                  .withAlpha(
-                                                                    26,
-                                                                  ),
-                                                              shape:
-                                                                  BoxShape
-                                                                      .circle,
-                                                            ),
-                                                        child: const Icon(
-                                                          Icons.close_rounded,
-                                                          size: 18,
+                                                        decoration: BoxDecoration(
+                                                          color: AppTheme
+                                                              .successGreen
+                                                              .withAlpha(38),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                        ),
+                                                        child: Icon(
+                                                          isImage 
+                                                              ? Icons.image_rounded 
+                                                              : Icons.attach_file_rounded,
                                                           color:
-                                                              AppTheme.errorRed,
+                                                              AppTheme
+                                                                  .successGreen,
+                                                          size: 24,
                                                         ),
                                                       ),
-                                                      onPressed: () {
-                                                        setState(() {
-                                                          _selectedFiles
-                                                              .removeAt(index);
-                                                        });
-                                                      },
-                                                    ),
-                                                  ],
+                                                      const SizedBox(width: 16),
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                              file.name,
+                                                              style: const TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
+                                                                color:
+                                                                    AppTheme
+                                                                        .darkGray,
+                                                              ),
+                                                              maxLines: 1,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 4,
+                                                            ),
+                                                            Text(
+                                                              '${(file.size / 1024).toStringAsFixed(1)} KB${isImage ? ' • Tap to view' : ''}',
+                                                              style: TextStyle(
+                                                                fontSize: 12,
+                                                                color:
+                                                                    AppTheme
+                                                                        .mediumGray,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      IconButton(
+                                                        icon: Container(
+                                                          padding:
+                                                              const EdgeInsets.all(
+                                                                6,
+                                                              ),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                                color: AppTheme
+                                                                    .errorRed
+                                                                    .withAlpha(
+                                                                      26,
+                                                                    ),
+                                                                shape:
+                                                                    BoxShape
+                                                                        .circle,
+                                                              ),
+                                                          child: const Icon(
+                                                            Icons.close_rounded,
+                                                            size: 18,
+                                                            color:
+                                                                AppTheme.errorRed,
+                                                          ),
+                                                        ),
+                                                        onPressed: () {
+                                                          setState(() {
+                                                            _selectedFiles
+                                                                .removeAt(index);
+                                                          });
+                                                        },
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ).fadeInSlideUp(
                                                 delay: Duration(
@@ -1153,53 +1269,104 @@ class _SubmitReportPageState extends State<SubmitReportPage> {
                                       ),
 
                                     if (_selectedFiles.length < 3)
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                            color: AppTheme.mediumBlue
-                                                .withAlpha(13),
-                                            style: BorderStyle.solid,
-                                            width: 2,
+                                      DropTarget(
+                                        enable: _selectedFiles.length < 3,
+                                        onDragEntered: (_) {
+                                          setState(
+                                            () => _attachmentDropHover = true,
+                                          );
+                                        },
+                                        onDragExited: (_) {
+                                          setState(
+                                            () => _attachmentDropHover = false,
+                                          );
+                                        },
+                                        onDragDone: (d) async {
+                                          setState(
+                                            () => _attachmentDropHover = false,
+                                          );
+                                          await _handleDroppedFiles(d);
+                                        },
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 150,
                                           ),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          child: InkWell(
-                                            onTap: _pickFile,
-                                            borderRadius: BorderRadius.circular(
-                                              12,
+                                          decoration: BoxDecoration(
+                                            border: Border.all(
+                                              color: _attachmentDropHover
+                                                  ? AppTheme.skyBlue
+                                                  : AppTheme.mediumBlue
+                                                      .withAlpha(13),
+                                              style: BorderStyle.solid,
+                                              width: 2,
                                             ),
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 20,
-                                                    horizontal: 16,
-                                                  ),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons
-                                                        .add_circle_outline_rounded,
-                                                    color: AppTheme.skyBlue,
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  Text(
-                                                    _selectedFiles.isEmpty
-                                                        ? 'Attach File (Max 3)'
-                                                        : 'Add Another File',
-                                                    style: TextStyle(
-                                                      fontSize: 15,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: AppTheme.skyBlue,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            color: _attachmentDropHover
+                                                ? AppTheme.skyBlue.withAlpha(
+                                                    20,
+                                                  )
+                                                : Colors.transparent,
+                                          ),
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: _pickFile,
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 20,
+                                                      horizontal: 16,
                                                     ),
-                                                  ),
-                                                ],
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        Icon(
+                                                          Icons
+                                                              .add_circle_outline_rounded,
+                                                          color:
+                                                              AppTheme.skyBlue,
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 12,
+                                                        ),
+                                                        Text(
+                                                          _selectedFiles.isEmpty
+                                                              ? 'Attach File (Max 3)'
+                                                              : 'Add Another File',
+                                                          style: TextStyle(
+                                                            fontSize: 15,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            color: AppTheme
+                                                                .skyBlue,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      _attachmentDropHover
+                                                          ? 'Release to add files'
+                                                          : 'Tap to browse or drag and drop files here',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: AppTheme
+                                                            .mediumGray,
+                                                      ),
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ),
                                           ),

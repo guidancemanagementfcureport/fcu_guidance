@@ -78,6 +78,10 @@ class _LoginPageState extends State<LoginPage> {
             case UserRole.dean:
               dashboardRoute = '/dean/dashboard';
               break;
+            case UserRole.principal:
+            case UserRole.assistantPrincipal:
+              dashboardRoute = '/principal/dashboard';
+              break;
             case UserRole.admin:
               dashboardRoute = '/admin/dashboard';
               break;

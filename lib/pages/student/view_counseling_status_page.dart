@@ -77,7 +77,7 @@ class _ViewCounselingStatusPageState extends State<ViewCounselingStatusPage> {
           // Cache participants names
           if (request.participants != null) {
             for (final p in request.participants!) {
-              final uid = p['user_id'];
+              final uid = p['userId'] ?? p['user_id'];
               if (uid is String &&
                   uid != 'parent' &&
                   !_participantUserCache.containsKey(uid)) {
@@ -618,7 +618,7 @@ class _ViewCounselingStatusPageState extends State<ViewCounselingStatusPage> {
                             'Participants',
                             request.participants!
                                 .map((p) {
-                                  final uid = p['user_id'];
+                                  final uid = p['userId'] ?? p['user_id'];
                                   final role = p['role'] ?? 'Participant';
                                   if (uid == null) return 'Unknown ($role)';
                                   final name =

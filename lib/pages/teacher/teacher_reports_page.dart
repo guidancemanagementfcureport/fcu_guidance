@@ -38,18 +38,8 @@ class _TeacherReportsPageState extends State<TeacherReportsPage> {
   void initState() {
     super.initState();
     _loadReports();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        if (authProvider.currentUser != null) {
-          final matchedLocation = GoRouterState.of(context).matchedLocation;
-          context.read<NotificationProvider>().markNotificationsAsSeenForRoute(
-            authProvider.currentUser!.id,
-            matchedLocation,
-          );
-        }
-      }
-    });
+    // Intentionally not calling markNotificationsAsSeenForRoute here,
+    // so NEW badges persist until the report is explicitly opened.
     _loadCounselors();
   }
 
@@ -1071,8 +1061,10 @@ class _TeacherReportsPageState extends State<TeacherReportsPage> {
                                                   ),
                                                 ),
                                                 clipBehavior: Clip.antiAlias,
-                                                child: InkWell(
-                                                  onTap: () {
+                                                child: Stack(
+                                                  children: [
+                                                    InkWell(
+                                                      onTap: () {
                                                     // Mark the corresponding notification as read when the report is opened
                                                     final notification =
                                                         notificationProvider
@@ -1146,54 +1138,15 @@ class _TeacherReportsPageState extends State<TeacherReportsPage> {
                                                                     CrossAxisAlignment
                                                                         .start,
                                                                 children: [
-                                                                  Row(
-                                                                    children: [
-                                                                      if (isNew)
-                                                                        Container(
-                                                                          margin: const EdgeInsets.only(
-                                                                            right:
-                                                                                8,
-                                                                          ),
-                                                                          padding: const EdgeInsets.symmetric(
-                                                                            horizontal:
-                                                                                8,
-                                                                            vertical:
-                                                                                2,
-                                                                          ),
-                                                                          decoration: BoxDecoration(
-                                                                            color:
-                                                                                AppTheme.skyBlue,
-                                                                            borderRadius: BorderRadius.circular(
-                                                                              6,
-                                                                            ),
-                                                                          ),
-                                                                          child: const Text(
-                                                                            'NEW',
-                                                                            style: TextStyle(
-                                                                              color:
-                                                                                  Colors.white,
-                                                                              fontSize:
-                                                                                  10,
-                                                                              fontWeight:
-                                                                                  FontWeight.bold,
-                                                                            ),
-                                                                          ),
-                                                                        ),
-                                                                      Expanded(
-                                                                        child: Text(
-                                                                          report
-                                                                              .title,
-                                                                          style: const TextStyle(
-                                                                            fontWeight:
-                                                                                FontWeight.bold,
-                                                                            fontSize:
-                                                                                17,
-                                                                            color:
-                                                                                AppTheme.deepBlue,
-                                                                          ),
-                                                                        ),
-                                                                      ),
-                                                                    ],
+                                                                  Text(
+                                                                    report.title,
+                                                                    style: const TextStyle(
+                                                                      fontWeight: FontWeight.bold,
+                                                                      fontSize: 17,
+                                                                      color: AppTheme.deepBlue,
+                                                                    ),
+                                                                    maxLines: 1,
+                                                                    overflow: TextOverflow.ellipsis,
                                                                   ),
                                                                   const SizedBox(
                                                                     height: 4,
@@ -1338,7 +1291,42 @@ class _TeacherReportsPageState extends State<TeacherReportsPage> {
                                                     ),
                                                   ),
                                                 ),
-                                              );
+                                                if (isNew)
+                                                  Positioned(
+                                                    top: 0,
+                                                    left: 0,
+                                                    child: Container(
+                                                      padding: const EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 4,
+                                                      ),
+                                                      decoration: BoxDecoration(
+                                                        color: AppTheme.skyBlue,
+                                                        borderRadius: const BorderRadius.only(
+                                                          bottomRight: Radius.circular(12),
+                                                        ),
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: AppTheme.skyBlue.withValues(alpha: 0.3),
+                                                            blurRadius: 4,
+                                                            offset: const Offset(1, 1),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      child: const Text(
+                                                        'NEW',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.bold,
+                                                          letterSpacing: 1,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          );
                                             },
                                           );
                                         },

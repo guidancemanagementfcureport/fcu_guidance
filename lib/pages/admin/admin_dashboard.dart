@@ -733,6 +733,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case UserRole.counselor:
         return Icons.psychology_alt_rounded;
       case UserRole.dean:
+      case UserRole.principal:
+      case UserRole.assistantPrincipal:
         return Icons.account_balance_rounded;
       case UserRole.admin:
         return Icons.admin_panel_settings_rounded;
@@ -748,6 +750,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case UserRole.counselor:
         return const Color(0xFF0EA5E9);
       case UserRole.dean:
+      case UserRole.principal:
+      case UserRole.assistantPrincipal:
         return const Color(0xFF4C1D95); // Deep indigo
       case UserRole.admin:
         return AppTheme.warningOrange;

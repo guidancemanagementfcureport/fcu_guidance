@@ -307,6 +307,12 @@ class _StickyNavigationBarState extends State<StickyNavigationBar> {
                           path = '/counselor/dashboard';
                           break;
                         case UserRole.dean:
+                          path = '/dean/dashboard';
+                          break;
+                        case UserRole.principal:
+                        case UserRole.assistantPrincipal:
+                          path = '/principal/dashboard';
+                          break;
                         case UserRole.admin:
                           path = '/admin/dashboard';
                           break;
@@ -563,6 +569,12 @@ class _StickyNavigationBarState extends State<StickyNavigationBar> {
                           path = '/counselor/dashboard';
                           break;
                         case UserRole.dean:
+                          path = '/dean/dashboard';
+                          break;
+                        case UserRole.principal:
+                        case UserRole.assistantPrincipal:
+                          path = '/principal/dashboard';
+                          break;
                         case UserRole.admin:
                           path = '/admin/dashboard';
                           break;
@@ -630,3 +642,4 @@ class _NavigationBarDelegate extends SliverPersistentHeaderDelegate {
     return oldDelegate.child != child || oldDelegate.isScrolled != isScrolled;
   }
 }
+

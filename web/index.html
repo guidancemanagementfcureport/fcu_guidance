@@ -34,6 +34,22 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <!-- Prevent the browser from opening dropped files in a new tab; Flutter/desktop_drop still receives the drop. -->
+  <script>
+    function isFileDrag(e) {
+      var dt = e.dataTransfer;
+      if (!dt || !dt.types) return false;
+      var t = dt.types;
+      if (t.contains) return t.contains('Files');
+      for (var i = 0; i < t.length; i++) if (t[i] === 'Files') return true;
+      return false;
+    }
+    ['dragenter', 'dragover', 'drop'].forEach(function (eventName) {
+      document.addEventListener(eventName, function (e) {
+        if (isFileDrag(e)) e.preventDefault();
+      }, true);
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

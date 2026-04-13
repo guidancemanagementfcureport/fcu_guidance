@@ -164,6 +164,8 @@ enum UserRole {
   teacher,
   counselor,
   dean,
+  principal,
+  assistantPrincipal,
   admin;
 
   static UserRole fromString(String role) {
@@ -176,6 +178,10 @@ enum UserRole {
         return UserRole.counselor;
       case 'dean':
         return UserRole.dean;
+      case 'principal':
+        return UserRole.principal;
+      case 'assistant_principal':
+        return UserRole.assistantPrincipal;
       case 'admin':
         return UserRole.admin;
       default:
@@ -194,6 +200,10 @@ enum UserRole {
         return 'counselor';
       case UserRole.dean:
         return 'dean';
+      case UserRole.principal:
+        return 'principal';
+      case UserRole.assistantPrincipal:
+        return 'assistant_principal';
       case UserRole.admin:
         return 'admin';
     }
@@ -209,6 +219,10 @@ enum UserRole {
         return 'Counselor';
       case UserRole.dean:
         return 'Dean';
+      case UserRole.principal:
+        return 'Principal';
+      case UserRole.assistantPrincipal:
+        return 'Assistant Principal';
       case UserRole.admin:
         return 'System Admin';
     }

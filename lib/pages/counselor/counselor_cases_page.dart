@@ -36,17 +36,8 @@ class _CounselorCasesPageState extends State<CounselorCasesPage> {
   void initState() {
     super.initState();
     _loadReports();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        if (authProvider.currentUser != null) {
-          context.read<NotificationProvider>().markNotificationsAsSeenForRoute(
-            authProvider.currentUser!.id,
-            '/counselor/cases',
-          );
-        }
-      }
-    });
+    // Intentionally not calling markNotificationsAsSeenForRoute here, 
+    // so NEW badges persist until the report is explicitly opened.
   }
 
   @override
@@ -166,14 +157,25 @@ class _CounselorCasesPageState extends State<CounselorCasesPage> {
     }
   }
 
-  Future<void> _forwardToDean() async {
+  Future<void> _forwardToDean(UserModel? student) async {
     if (_selectedReport == null) return;
+    
+    final isHighSchool = student?.studentLevel == StudentLevel.juniorHigh || student?.studentLevel == StudentLevel.seniorHigh;
+    final targetAdmin = isHighSchool ? 'Principal' : 'Dean';
+
+    if (_selectedReport!.status != ReportStatus.settled && _selectedReport!.status != ReportStatus.completed) {
+      ToastUtils.showError(
+        context,
+        'You can only forward a closed/completed case to the $targetAdmin.',
+      );
+      return;
+    }
 
     final note = _notesController.text.trim();
     if (note.isEmpty) {
       ToastUtils.showWarning(
         context,
-        'Please add assessment notes before forwarding to Dean',
+        'Please add assessment notes before forwarding to $targetAdmin',
       );
       return;
     }
@@ -187,11 +189,11 @@ class _CounselorCasesPageState extends State<CounselorCasesPage> {
           reportId: _selectedReport!.id,
           status: ReportStatus.counselorReviewed,
           counselorId: counselorId,
-          note: 'Forwarded to Dean for final action. Counselor Note: $note',
+          note: 'Forwarded to $targetAdmin for final action. Counselor Note: $note',
         );
 
         if (mounted) {
-          ToastUtils.showSuccess(context, 'Report forwarded to Dean');
+          ToastUtils.showSuccess(context, 'Report forwarded to $targetAdmin');
           _notesController.clear();
           _loadReports();
           setState(() => _selectedReport = null);
@@ -437,65 +439,41 @@ class _CounselorCasesPageState extends State<CounselorCasesPage> {
 
             final isSelected = _selectedReport?.id == report.id;
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color:
-                    isSelected
-                        ? AppTheme.skyBlue.withValues(alpha: 0.05)
-                        : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected ? AppTheme.skyBlue : Colors.white,
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
-                title: Row(
-                  children: [
-                    if (isNew)
-                      Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.skyBlue,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'NEW',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    Expanded(
-                      child: Text(
-                        report.title,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color:
-                              isSelected ? AppTheme.skyBlue : AppTheme.deepBlue,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+            return Stack(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected
+                            ? AppTheme.skyBlue.withValues(alpha: 0.05)
+                            : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected ? AppTheme.skyBlue : Colors.white,
+                      width: 1.5,
                     ),
-                  ],
-                ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16),
+                    title: Text(
+                      report.title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color:
+                            isSelected ? AppTheme.skyBlue : AppTheme.deepBlue,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -541,7 +519,43 @@ class _CounselorCasesPageState extends State<CounselorCasesPage> {
                 ),
                 onTap: () => _showReportDetails(report),
               ),
-            );
+            ),
+            if (isNew)
+              Positioned(
+                top: 0,
+                left: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.skyBlue,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(12),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.skyBlue.withValues(alpha: 0.3),
+                        blurRadius: 4,
+                        offset: const Offset(1, 1),
+                      ),
+                    ],
+                  ),
+                  child: const Text(
+                    'NEW',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
           },
         );
       },
@@ -1018,15 +1032,16 @@ class _CounselorCasesPageState extends State<CounselorCasesPage> {
   }
 
   Widget _buildActionButtons(UserModel? student) {
-    final isCollege = student?.studentLevel == StudentLevel.college;
+    final isHighSchool = student?.studentLevel == StudentLevel.juniorHigh || student?.studentLevel == StudentLevel.seniorHigh;
+    final targetAdmin = isHighSchool ? 'Principal' : 'Dean';
 
-    if (isCollege) {
+    if (_selectedReport?.status == ReportStatus.settled || _selectedReport?.status == ReportStatus.completed) {
       return SizedBox(
         width: double.infinity,
         child: FilledButton.icon(
-          onPressed: _forwardToDean,
+          onPressed: () => _forwardToDean(student),
           icon: const Icon(Icons.forward_to_inbox_rounded),
-          label: const Text('Forward to Dean for Final Decision'),
+          label: Text('Forward Final Record to $targetAdmin'),
           style: FilledButton.styleFrom(
             backgroundColor: AppTheme.warningOrange,
             padding: const EdgeInsets.symmetric(vertical: 20),

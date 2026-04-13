@@ -31,6 +31,9 @@ import '../pages/admin/backup_restore_page.dart';
 import '../pages/dean/dean_dashboard.dart';
 import '../pages/dean/dean_reports_page.dart';
 import '../pages/dean/dean_report_analytics_page.dart';
+import '../pages/principal/principal_dashboard.dart';
+import '../pages/principal/principal_reports_page.dart';
+import '../pages/principal/principal_report_analytics_page.dart';
 import '../pages/placeholder_page.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
@@ -68,9 +71,22 @@ class AppRouter {
                 return '/counselor/dashboard';
               case UserRole.dean:
                 return '/dean/dashboard';
+              case UserRole.principal:
+              case UserRole.assistantPrincipal:
+                return '/principal/dashboard';
               case UserRole.admin:
                 return '/admin/dashboard';
             }
+          }
+
+          // Deans and principals use different route trees; fix wrong-prefix navigation.
+          if (role == UserRole.dean &&
+              state.matchedLocation.startsWith('/principal')) {
+            return state.matchedLocation.replaceFirst('/principal', '/dean');
+          }
+          if ((role == UserRole.principal || role == UserRole.assistantPrincipal) &&
+              state.matchedLocation.startsWith('/dean')) {
+            return state.matchedLocation.replaceFirst('/dean', '/principal');
           }
 
           // Role-based route protection
@@ -93,7 +109,9 @@ class AppRouter {
           }
           if (state.matchedLocation.startsWith('/admin') &&
               role != UserRole.admin &&
-              role != UserRole.dean) {
+              role != UserRole.dean &&
+              role != UserRole.principal &&
+              role != UserRole.assistantPrincipal) {
             return '/${role.toString()}/dashboard';
           }
         }
@@ -228,6 +246,24 @@ class AppRouter {
         GoRoute(
           path: '/dean/analytics',
           builder: (context, state) => const DeanReportAnalyticsPage(),
+        ),
+
+        // Principal routes
+        GoRoute(
+          path: '/principal/dashboard',
+          builder: (context, state) => const PrincipalDashboard(),
+        ),
+        GoRoute(
+          path: '/principal/reports',
+          builder: (context, state) => const PrincipalReportsPage(),
+        ),
+        GoRoute(
+          path: '/principal/communication',
+          builder: (context, state) => const CommunicationToolsPage(),
+        ),
+        GoRoute(
+          path: '/principal/analytics',
+          builder: (context, state) => const PrincipalReportAnalyticsPage(),
         ),
 
         // Admin routes

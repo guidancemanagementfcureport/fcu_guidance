@@ -95,6 +95,13 @@ class _CounselorStudentHistoryPageState
               }
             }
           }
+          // Cache student
+          if (!_userCache.containsKey(request.studentId)) {
+            final student = await _supabase.getUserById(request.studentId);
+            if (student != null) {
+              _userCache[request.studentId] = student;
+            }
+          }
         }
 
         if (mounted) {
@@ -207,14 +214,191 @@ class _CounselorStudentHistoryPageState
     }
   }
 
+  Future<void> _forwardSettledReportCopy(
+    CounselingRequestModel request,
+    ReportModel report,
+  ) async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final counselorId = authProvider.currentUser?.id;
+      if (counselorId == null) {
+        ToastUtils.showError(context, 'Counselor account not found.');
+        return;
+      }
+
+      if (request.status != CounselingStatus.settled) {
+        ToastUtils.showWarning(
+          context,
+          'Only settled reports can be forwarded as a copy.',
+        );
+        return;
+      }
+
+      final student =
+          _userCache[request.studentId] ??
+          await _supabase.getUserById(request.studentId);
+      if (!mounted) return;
+      if (student == null || student.studentLevel == null) {
+        ToastUtils.showError(
+          context,
+          'Unable to detect student grade level for forwarding.',
+        );
+        return;
+      }
+
+      final allUsers = await _supabase.getAllUsers();
+      if (!mounted) return;
+      final activeUsers = allUsers.where((u) => u.isActive).toList();
+
+      List<UserModel> eligibleTargets = [];
+      if (student.studentLevel == StudentLevel.college) {
+        eligibleTargets =
+            activeUsers.where((u) => u.role == UserRole.dean).toList()
+              ..sort((a, b) => a.fullName.compareTo(b.fullName));
+      } else {
+        eligibleTargets =
+            activeUsers
+                .where(
+                  (u) =>
+                      u.role == UserRole.principal ||
+                      u.role == UserRole.assistantPrincipal,
+                )
+                .toList()
+              ..sort((a, b) {
+                if (a.role == b.role) {
+                  return a.fullName.compareTo(b.fullName);
+                }
+                // Prioritize Principal account over Assistant Principal.
+                return a.role == UserRole.principal ? -1 : 1;
+              });
+      }
+
+      if (eligibleTargets.isEmpty) {
+        ToastUtils.showError(
+          context,
+          student.studentLevel == StudentLevel.college
+              ? 'No active Dean account found.'
+              : 'No active Principal/Assistant Principal account found.',
+        );
+        return;
+      }
+
+      final target = await _showForwardTargetPicker(
+        student: student,
+        eligibleTargets: eligibleTargets,
+      );
+      if (!mounted) return;
+      if (target == null) return;
+
+      await _supabase.createSettledReportForwardCopy(
+        sourceReport: report,
+        counselorId: counselorId,
+        targetOversightUserId: target.id,
+        targetRole: target.role,
+      );
+
+      if (!mounted) return;
+      ToastUtils.showSuccess(
+        context,
+        'Report copy forwarded to ${target.fullName} (${target.role.displayName}).',
+      );
+      Navigator.pop(context);
+      _loadRequests();
+    } catch (e) {
+      if (mounted) {
+        ToastUtils.showError(context, 'Error forwarding report copy: $e');
+      }
+    }
+  }
+
+  Future<UserModel?> _showForwardTargetPicker({
+    required UserModel student,
+    required List<UserModel> eligibleTargets,
+  }) async {
+    UserModel selected = eligibleTargets.first;
+
+    return showDialog<UserModel>(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Select Forward Recipient'),
+            content: StatefulBuilder(
+              builder:
+                  (context, setStateDialog) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        student.studentLevel == StudentLevel.college
+                            ? 'Select a Dean account for this college record.'
+                            : 'Select a Principal account for this JHS/SHS record.',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppTheme.mediumGray,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<UserModel>(
+                        initialValue: selected,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: 'Recipient Account',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                        ),
+                        items:
+                            eligibleTargets
+                                .map(
+                                  (u) => DropdownMenuItem<UserModel>(
+                                    value: u,
+                                    child: Text(
+                                      '${u.fullName} (${u.role.displayName})',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setStateDialog(() => selected = value);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, selected),
+                child: const Text('Forward'),
+              ),
+            ],
+          ),
+    );
+  }
+
   void _showRequestDetails(CounselingRequestModel request) {
     final report = _reportMap[request.id];
     final logs = _activityLogsMap[request.id] ?? [];
     _notesController.clear();
 
     // Initialize temporary dialog state
-    _dialogDate = null;
-    _dialogTime = null;
+    if (request.status == CounselingStatus.pendingReview) {
+      _dialogDate = request.sessionDate;
+      _dialogTime = request.sessionTime;
+    } else {
+      _dialogDate = null;
+      _dialogTime = null;
+    }
     _dialogSessionType =
         (request.participants != null && request.participants!.isNotEmpty)
             ? 'Group'
@@ -465,6 +649,26 @@ class _CounselorStudentHistoryPageState
                                       'Mode',
                                       request.locationMode!,
                                     ),
+                                ] else if (request.status ==
+                                        CounselingStatus.pendingReview &&
+                                    request.sessionDate != null) ...[
+                                  const SizedBox(height: 24),
+                                  _buildSectionHeader(
+                                    Icons.event_available_rounded,
+                                    'Student Preferred Schedule',
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildDetailItem(
+                                    'Date',
+                                    DateFormat(
+                                      'MMMM dd, yyyy',
+                                    ).format(request.sessionDate!),
+                                  ),
+                                  if (request.sessionTime != null)
+                                    _buildDetailItem(
+                                      'Time',
+                                      request.sessionTime!.format(context),
+                                    ),
                                 ],
 
                                 const SizedBox(height: 32),
@@ -642,6 +846,20 @@ class _CounselorStudentHistoryPageState
                                     backgroundColor: AppTheme.deepBlue,
                                   ),
                                   child: const Text('Settle & Close Session'),
+                                )
+                              else if (request.status ==
+                                      CounselingStatus.settled &&
+                                  report != null)
+                                FilledButton(
+                                  onPressed:
+                                      () => _forwardSettledReportCopy(
+                                        request,
+                                        report,
+                                      ),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppTheme.infoBlue,
+                                  ),
+                                  child: const Text('Forward Copy'),
                                 ),
                             ],
                           ),

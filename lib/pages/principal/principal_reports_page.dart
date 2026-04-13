@@ -18,14 +18,14 @@ import '../../widgets/modern_dashboard_header.dart';
 // import 'dean_approval_dialog.dart';
 // import 'dean_schedule_counseling_page.dart';
 
-class DeanReportsPage extends StatefulWidget {
-  const DeanReportsPage({super.key});
+class PrincipalReportsPage extends StatefulWidget {
+  const PrincipalReportsPage({super.key});
 
   @override
-  State<DeanReportsPage> createState() => _DeanReportsPageState();
+  State<PrincipalReportsPage> createState() => _PrincipalReportsPageState();
 }
 
-class _DeanReportsPageState extends State<DeanReportsPage> {
+class _PrincipalReportsPageState extends State<PrincipalReportsPage> {
   final _supabase = SupabaseService();
   bool _isLoading = true;
   List<ReportModel> _reports = [];
@@ -33,13 +33,8 @@ class _DeanReportsPageState extends State<DeanReportsPage> {
   List<ReportActivityLog> _activityLogs = [];
   final Map<String, UserModel> _userCache = {};
   String _filterStatus = 'all';
-  /// Deduped list before course/year filters (Dean: college students).
+  String _studentLevelFilter = 'all'; // all | juniorHigh | seniorHigh
   List<ReportModel> _allDedupedReports = [];
-  /// Populated only in [_loadReports] so build never iterates a stale JS field after hot reload.
-  List<String> _courseFilterOptions = [];
-  List<String> _yearFilterOptions = [];
-  String _courseFilter = 'all';
-  String _yearLevelFilter = 'all';
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -70,6 +65,8 @@ class _DeanReportsPageState extends State<DeanReportsPage> {
       final filtered = _deduplicateForwardedCopies(finalRecords);
 
       _allDedupedReports = filtered;
+
+      // Batch-load student levels so the student-level dropdown can filter results.
       final studentIds =
           filtered.map((r) => r.studentId).whereType<String>().toSet().toList();
       if (studentIds.isNotEmpty) {
@@ -79,14 +76,9 @@ class _DeanReportsPageState extends State<DeanReportsPage> {
         }
       }
 
-      final courseOpts = _computeCourseOptions(filtered);
-      final yearOpts = _computeYearOptions(filtered);
-
       if (mounted) {
         setState(() {
-          _courseFilterOptions = courseOpts;
-          _yearFilterOptions = yearOpts;
-          _reports = _applyCourseYearFilters(filtered);
+          _reports = _applyStudentLevelFilter(_allDedupedReports);
           _filteredReports = _reports;
           _isLoading = false;
         });
@@ -95,14 +87,34 @@ class _DeanReportsPageState extends State<DeanReportsPage> {
     } catch (e) {
       if (mounted) {
         ToastUtils.showError(context, 'Error loading reports: $e');
-        setState(() {
-          _isLoading = false;
-          _allDedupedReports = [];
-          _courseFilterOptions = [];
-          _yearFilterOptions = [];
-        });
+        setState(() => _isLoading = false);
       }
     }
+  }
+
+  List<ReportModel> _applyStudentLevelFilter(List<ReportModel> source) {
+    if (_studentLevelFilter == 'all') return source;
+
+    final targetLevel = _studentLevelFilter == 'juniorHigh'
+        ? StudentLevel.juniorHigh
+        : StudentLevel.seniorHigh;
+
+    return source.where((r) {
+      if (r.studentId == null) return false; // can't determine level
+      return _userCache[r.studentId!]?.studentLevel == targetLevel;
+    }).toList();
+  }
+
+  int _countRecordsForLevel(StudentLevel level) {
+    var count = 0;
+    for (final r in _allDedupedReports) {
+      final sid = r.studentId;
+      if (sid == null) continue;
+      if (_userCache[sid]?.studentLevel == level) {
+        count++;
+      }
+    }
+    return count;
   }
 
   String? _extractForwardSourceReportId(ReportModel report) {
@@ -140,69 +152,6 @@ class _DeanReportsPageState extends State<DeanReportsPage> {
     final deduped = latestByKey.values.toList();
     deduped.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return deduped;
-  }
-
-  List<ReportModel> _applyCourseYearFilters(List<ReportModel> source) {
-    if (_courseFilter == 'all' && _yearLevelFilter == 'all') return source;
-    return source.where((r) {
-      final sid = r.studentId;
-      if (sid == null) return false;
-      final u = _userCache[sid];
-      if (u == null) return false;
-      if (_courseFilter != 'all') {
-        final c = (u.course ?? '').trim();
-        if (c.toLowerCase() != _courseFilter.toLowerCase()) return false;
-      }
-      if (_yearLevelFilter != 'all') {
-        final y = (u.yearLevel ?? '').trim();
-        if (y.toLowerCase() != _yearLevelFilter.toLowerCase()) return false;
-      }
-      return true;
-    }).toList();
-  }
-
-  List<String> _computeCourseOptions(List<ReportModel> reports) {
-    final set = <String>{};
-    for (final r in reports) {
-      final sid = r.studentId;
-      if (sid == null) continue;
-      final c = _userCache[sid]?.course;
-      if (c != null && c.trim().isNotEmpty) set.add(c.trim());
-    }
-    final list = set.toList();
-    list.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-    return list;
-  }
-
-  List<String> _computeYearOptions(List<ReportModel> reports) {
-    final set = <String>{};
-    for (final r in reports) {
-      final sid = r.studentId;
-      if (sid == null) continue;
-      final y = _userCache[sid]?.yearLevel;
-      if (y != null && y.trim().isNotEmpty) set.add(y.trim());
-    }
-    final list = set.toList();
-    list.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-    return list;
-  }
-
-  /// Web hot reload can leave State fields invalid; never iterate [_allDedupedReports] in build.
-  List<ReportModel> _safeDedupedReportsForApply() {
-    try {
-      return List<ReportModel>.from(_allDedupedReports);
-    } catch (_) {
-      return <ReportModel>[];
-    }
-  }
-
-  /// Same JS interop issue as [_safeDedupedReportsForApply] for filter option lists.
-  List<String> _safeStringOptionList(List<String> source) {
-    try {
-      return List<String>.from(source);
-    } catch (_) {
-      return <String>[];
-    }
   }
 
   Future<void> _loadActivityLogs(String reportId) async {
@@ -1177,6 +1126,8 @@ class _DeanReportsPageState extends State<DeanReportsPage> {
 
   Widget _buildStatsHeader(bool isDesktop) {
     final total = _reports.length;
+    final juniorHighCount = _countRecordsForLevel(StudentLevel.juniorHigh);
+    final seniorHighCount = _countRecordsForLevel(StudentLevel.seniorHigh);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1202,6 +1153,20 @@ class _DeanReportsPageState extends State<DeanReportsPage> {
               icon: Icons.assignment_outlined,
               width: cardWidth,
             ),
+            _DeanReportStatMiniCard(
+              label: 'Junior High Records',
+              value: juniorHighCount.toString(),
+              color: const Color(0xFF3B82F6),
+              icon: Icons.school_rounded,
+              width: cardWidth,
+            ),
+            _DeanReportStatMiniCard(
+              label: 'Senior High Records',
+              value: seniorHighCount.toString(),
+              color: const Color(0xFF10B981),
+              icon: Icons.school_rounded,
+              width: cardWidth,
+            ),
           ],
         );
       },
@@ -1209,91 +1174,6 @@ class _DeanReportsPageState extends State<DeanReportsPage> {
   }
 
   Widget _buildSearchAndFilters() {
-    final courses = _safeStringOptionList(_courseFilterOptions);
-    final years = _safeStringOptionList(_yearFilterOptions);
-
-    InputDecoration dropdownDecoration({
-      required String label,
-      required IconData icon,
-    }) {
-      return InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(
-          fontSize: 12,
-          color: AppTheme.mediumGray,
-          fontWeight: FontWeight.w600,
-        ),
-        prefixIcon: Icon(icon, size: 18, color: AppTheme.mediumGray),
-        filled: true,
-        fillColor: AppTheme.skyBlue.withValues(alpha: 0.07),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      );
-    }
-
-    Widget courseDropdown() {
-      return DropdownButtonFormField<String>(
-        key: ValueKey('course_$_courseFilter'),
-        initialValue: _courseFilter,
-        isExpanded: true,
-        decoration: dropdownDecoration(
-          label: 'Course',
-          icon: Icons.menu_book_outlined,
-        ),
-        items: [
-          const DropdownMenuItem(value: 'all', child: Text('All Courses')),
-          ...courses.map(
-            (c) => DropdownMenuItem(
-              value: c,
-              child: Text(c, overflow: TextOverflow.ellipsis),
-            ),
-          ),
-        ],
-        onChanged: (value) {
-          if (value == null) return;
-          setState(() => _courseFilter = value);
-          setState(() {
-            _reports = _applyCourseYearFilters(_safeDedupedReportsForApply());
-            _filteredReports = _reports;
-          });
-          _filterBySearch(_searchController.text);
-        },
-      );
-    }
-
-    Widget yearDropdown() {
-      return DropdownButtonFormField<String>(
-        key: ValueKey('year_$_yearLevelFilter'),
-        initialValue: _yearLevelFilter,
-        isExpanded: true,
-        decoration: dropdownDecoration(
-          label: 'Year Level',
-          icon: Icons.calendar_today_outlined,
-        ),
-        items: [
-          const DropdownMenuItem(value: 'all', child: Text('All Years')),
-          ...years.map(
-            (y) => DropdownMenuItem(
-              value: y,
-              child: Text(y, overflow: TextOverflow.ellipsis),
-            ),
-          ),
-        ],
-        onChanged: (value) {
-          if (value == null) return;
-          setState(() => _yearLevelFilter = value);
-          setState(() {
-            _reports = _applyCourseYearFilters(_safeDedupedReportsForApply());
-            _filteredReports = _reports;
-          });
-          _filterBySearch(_searchController.text);
-        },
-      );
-    }
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1307,118 +1187,144 @@ class _DeanReportsPageState extends State<DeanReportsPage> {
           ),
         ],
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 900;
-          final searchField = TextField(
-            controller: _searchController,
-            onChanged: _filterBySearch,
-            decoration: InputDecoration(
-              hintText: 'Search by title, student, or type...',
-              prefixIcon: const Icon(
-                Icons.search,
-                color: AppTheme.mediumGray,
-              ),
-              filled: true,
-              fillColor: AppTheme.lightGray.withValues(alpha: 0.2),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-            ),
-          );
-
-          final filtersRow = wide
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: searchField),
-                    const SizedBox(width: 16),
-                    SizedBox(width: 200, child: courseDropdown()),
-                    const SizedBox(width: 12),
-                    SizedBox(width: 190, child: yearDropdown()),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    searchField,
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(child: courseDropdown()),
-                        const SizedBox(width: 12),
-                        Expanded(child: yearDropdown()),
-                      ],
-                    ),
-                  ],
-                );
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Column(
+        children: [
+          Row(
             children: [
-              filtersRow,
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.skyBlue.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.info_outline_rounded,
-                      size: 16,
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: _filterBySearch,
+                  decoration: InputDecoration(
+                    hintText: 'Search by title, student, or type...',
+                    prefixIcon: const Icon(
+                      Icons.search,
                       color: AppTheme.mediumGray,
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Tip: Use Course and Year Level to narrow college student reports. '
-                      'Options are built from students in the list below.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.mediumGray.withValues(alpha: 0.95),
-                        height: 1.25,
-                      ),
+                    filled: true,
+                    fillColor: AppTheme.lightGray.withValues(alpha: 0.2),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
                   ),
-                  Tooltip(
-                    message:
-                        'Dean account: filters apply to college student records in this list.',
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.skyBlue.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.tune_rounded,
-                        color: AppTheme.skyBlue,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: 20),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildFilterChip('all', 'Final Records'),
+              const SizedBox(width: 16),
+              SizedBox(
+                width: 210,
+                child: DropdownButtonFormField<String>(
+                  key: ValueKey(_studentLevelFilter),
+                  initialValue: _studentLevelFilter,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: 'Student Level',
+                    labelStyle: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.mediumGray,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.school_outlined,
+                      size: 18,
+                      color: AppTheme.mediumGray,
+                    ),
+                    filled: true,
+                    fillColor: AppTheme.skyBlue.withValues(alpha: 0.07),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'all',
+                      child: Text('All Levels'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'juniorHigh',
+                      child: Text('Junior High'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'seniorHigh',
+                      child: Text('Senior High'),
+                    ),
                   ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _studentLevelFilter = value);
+                    setState(() {
+                      _reports = _applyStudentLevelFilter(_allDedupedReports);
+                      _filteredReports = _reports;
+                    });
+                    _filterBySearch(_searchController.text);
+                  },
                 ),
               ),
             ],
-          );
-        },
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTheme.skyBlue.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.info_outline_rounded,
+                  size: 16,
+                  color: AppTheme.mediumGray,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Tip: Use “Student Level” to quickly view Junior High or Senior High forwarded records.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.mediumGray.withValues(alpha: 0.95),
+                    height: 1.25,
+                  ),
+                ),
+              ),
+              Tooltip(
+                message:
+                    'This filter is available only on the Principal account.',
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.skyBlue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.tune_rounded,
+                    color: AppTheme.skyBlue,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterChip('all', 'Final Records'),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

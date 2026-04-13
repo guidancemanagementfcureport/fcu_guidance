@@ -13,14 +13,14 @@ import '../../widgets/modern_dashboard_header.dart';
 // import 'dean_approval_dialog.dart';
 import '../../utils/animations.dart';
 
-class DeanDashboard extends StatefulWidget {
-  const DeanDashboard({super.key});
+class PrincipalDashboard extends StatefulWidget {
+  const PrincipalDashboard({super.key});
 
   @override
-  State<DeanDashboard> createState() => _DeanDashboardState();
+  State<PrincipalDashboard> createState() => _PrincipalDashboardState();
 }
 
-class _DeanDashboardState extends State<DeanDashboard> {
+class _PrincipalDashboardState extends State<PrincipalDashboard> {
   final _supabase = SupabaseService();
 
   bool _loading = true;
@@ -36,11 +36,11 @@ class _DeanDashboardState extends State<DeanDashboard> {
   }
 
   Future<void> _loadData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final currentRole = authProvider.currentUser?.role;
+    
     setState(() => _loading = true);
     try {
-      final currentUser = Provider.of<AuthProvider>(context, listen: false).currentUser;
-      final currentRole = currentUser?.role;
-
       final allReports = await _supabase.getDeanReports(role: currentRole);
       // Get all counseling requests by fetching from all counselors
       final allCounseling = <CounselingRequestModel>[];
@@ -96,7 +96,7 @@ class _DeanDashboardState extends State<DeanDashboard> {
       final totalReports = allReports.length;
 
       List<ReportModel> recentForwards = [];
-      final oversightId = currentUser?.id;
+      final oversightId = authProvider.currentUser?.id;
       if (oversightId != null) {
         recentForwards = await _supabase
             .getRecentCounselorForwardedCopiesForOversight(
@@ -130,7 +130,7 @@ class _DeanDashboardState extends State<DeanDashboard> {
           child: Column(
             children: [
               const ModernDashboardHeader(
-                title: 'Dean Dashboard',
+                title: 'Principal Dashboard',
                 subtitle: 'Welcome to your oversight control center',
                 icon: Icons.dashboard_rounded,
               ),
@@ -185,7 +185,7 @@ class _DeanDashboardState extends State<DeanDashboard> {
 
     double cardWidth;
     if (isDesktop) {
-      cardWidth = (width - 48) / 4;
+      cardWidth = (width - 64) / 4;
     } else if (isTablet) {
       cardWidth = (width - 24) / 2;
     } else {
@@ -201,7 +201,7 @@ class _DeanDashboardState extends State<DeanDashboard> {
           value: '$_totalReportsReceived',
           icon: Icons.assignment_outlined,
           color: AppTheme.skyBlue,
-          onTap: () => context.go('/dean/reports'),
+          onTap: () => context.go('/principal/reports'),
           width: cardWidth,
         ),
         _DeanStatCard(
@@ -209,11 +209,67 @@ class _DeanDashboardState extends State<DeanDashboard> {
           value: '$_recentForwardReportsCount',
           icon: Icons.inventory_2_outlined,
           color: AppTheme.warningOrange,
-          onTap: () => context.go('/dean/reports'),
+          onTap: () => context.go('/principal/reports'),
           width: cardWidth,
+        ),
+        FutureBuilder<Map<StudentLevel, int>>(
+          future: _countRecentForwardStudentLevels(),
+          builder: (context, snapshot) {
+            final data = snapshot.data ?? const {};
+            final jhs = data[StudentLevel.juniorHigh] ?? 0;
+            final shs = data[StudentLevel.seniorHigh] ?? 0;
+
+            return Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: [
+                _DeanStatCard(
+                  label: 'Junior High Records',
+                  value: jhs.toString(),
+                  icon: Icons.school_rounded,
+                  color: const Color(0xFF3B82F6),
+                  onTap: () => context.go('/principal/reports'),
+                  width: cardWidth,
+                ),
+                _DeanStatCard(
+                  label: 'Senior High Records',
+                  value: shs.toString(),
+                  icon: Icons.school_rounded,
+                  color: const Color(0xFF10B981),
+                  onTap: () => context.go('/principal/reports'),
+                  width: cardWidth,
+                ),
+              ],
+            );
+          },
         ),
       ],
     );
+  }
+
+  Future<Map<StudentLevel, int>> _countRecentForwardStudentLevels() async {
+    final counts = <StudentLevel, int>{};
+    final ids =
+        _recentForwardReports.map((r) => r.studentId).whereType<String>().toSet().toList();
+    if (ids.isEmpty) return counts;
+
+    final users = await _supabase.getUsersByIds(ids);
+    final levelById = <String, StudentLevel>{};
+    for (final u in users) {
+      if (u.studentLevel != null) {
+        levelById[u.id] = u.studentLevel!;
+      }
+    }
+
+    for (final r in _recentForwardReports) {
+      final sid = r.studentId;
+      if (sid == null) continue;
+      final level = levelById[sid];
+      if (level == null) continue;
+      counts[level] = (counts[level] ?? 0) + 1;
+    }
+
+    return counts;
   }
 
   Widget _buildIncomingReports(double width) {
@@ -258,7 +314,7 @@ class _DeanDashboardState extends State<DeanDashboard> {
                   ],
                 ),
                 TextButton(
-                  onPressed: () => context.go('/dean/reports'),
+                  onPressed: () => context.go('/principal/reports'),
                   child: const Text('View All'),
                 ),
               ],
@@ -359,7 +415,7 @@ class _DeanDashboardState extends State<DeanDashboard> {
 
   Future<void> _viewReportDetails(ReportModel report) async {
     // Navigate to reports page to view details
-    context.go('/dean/reports');
+    context.go('/principal/reports');
   }
 
   Widget _buildForwardStatusChip(ReportModel report) {
