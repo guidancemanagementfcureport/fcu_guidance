@@ -58,6 +58,19 @@ class _CounselorCasesPageState extends State<CounselorCasesPage> {
           setState(() {
             _reports = reports;
           });
+
+          // Keep Case Records badge aligned with actual visible records.
+          // If there are no records to review, clear stale unread new_report items.
+          if (reports.isEmpty) {
+            final notificationProvider = context.read<NotificationProvider>();
+            final staleCaseNotifications =
+                notificationProvider.notifications
+                    .where((n) => !n.isRead && n.type == NotificationType.newReport)
+                    .toList();
+            for (final notification in staleCaseNotifications) {
+              await notificationProvider.markAsRead(notification.id);
+            }
+          }
         }
       }
     } catch (e) {

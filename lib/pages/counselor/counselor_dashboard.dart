@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/auth_provider.dart';
+import '../../models/counseling_request_model.dart';
 import '../../services/supabase_service.dart';
 import '../../models/report_model.dart';
 import '../../theme/app_theme.dart';
@@ -28,6 +29,8 @@ class _CounselorDashboardState extends State<CounselorDashboard> {
 
   List<ActivityItem> _timelineItems = [];
   List<ActivityItem> _recentActivityItems = [];
+  List<CounselingRequestModel> _upcomingMeetings = [];
+  List<CounselingRequestModel> _studentHistoryRecords = [];
   Timer? _activityRefreshTimer;
 
   @override
@@ -64,6 +67,7 @@ class _CounselorDashboardState extends State<CounselorDashboard> {
             status: ReportStatus.settled,
           ),
           _countResolvedThisWeek(counselorId),
+          _supabase.getCounselorCounselingRequests(counselorId: counselorId),
         ]);
 
         if (mounted) {
@@ -79,6 +83,12 @@ class _CounselorDashboardState extends State<CounselorDashboard> {
                 reports.where((r) => r.status == ReportStatus.forwarded).length;
             _resolvedCases = results[1] as int;
             _resolvedThisWeek = results[2] as int;
+            _upcomingMeetings = _extractUpcomingMeetings(
+              results[3] as List<CounselingRequestModel>,
+            );
+            _studentHistoryRecords = _extractStudentHistoryRecords(
+              results[3] as List<CounselingRequestModel>,
+            );
             _isLoading = false;
           });
         }
@@ -308,6 +318,58 @@ class _CounselorDashboardState extends State<CounselorDashboard> {
     } else {
       return 'Just now';
     }
+  }
+
+  List<CounselingRequestModel> _extractUpcomingMeetings(
+    List<CounselingRequestModel> requests,
+  ) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final upcoming =
+        requests.where((request) {
+          if (request.sessionDate == null) return false;
+          final sessionDate = DateTime(
+            request.sessionDate!.year,
+            request.sessionDate!.month,
+            request.sessionDate!.day,
+          );
+          return sessionDate.isAtSameMomentAs(today) || sessionDate.isAfter(today);
+        }).toList();
+
+    upcoming.sort((a, b) {
+      final aDate = DateTime(
+        a.sessionDate!.year,
+        a.sessionDate!.month,
+        a.sessionDate!.day,
+        a.sessionTime?.hour ?? 0,
+        a.sessionTime?.minute ?? 0,
+      );
+      final bDate = DateTime(
+        b.sessionDate!.year,
+        b.sessionDate!.month,
+        b.sessionDate!.day,
+        b.sessionTime?.hour ?? 0,
+        b.sessionTime?.minute ?? 0,
+      );
+      return aDate.compareTo(bDate);
+    });
+
+    return upcoming.take(5).toList();
+  }
+
+  List<CounselingRequestModel> _extractStudentHistoryRecords(
+    List<CounselingRequestModel> requests,
+  ) {
+    final history =
+        requests.where((request) {
+          // Show records that are already part of counselor workflow history.
+          return request.sessionDate != null ||
+              request.status == CounselingStatus.confirmed ||
+              request.status == CounselingStatus.settled;
+        }).toList();
+
+    history.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return history.take(5).toList();
   }
 
   @override
@@ -655,15 +717,271 @@ class _CounselorDashboardState extends State<CounselorDashboard> {
       ),
     );
 
-    if (isWide) {
-      return Row(
+    final upcomingMeetingsCard = Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            offset: const Offset(0, 4),
+            blurRadius: 20,
+          ),
+        ],
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(flex: 1, child: recentActivityCard),
-          const SizedBox(width: 24),
-          Expanded(flex: 2, child: timelineCard),
-          const SizedBox(width: 24),
-          Expanded(flex: 1, child: forwardedCard),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Upcoming Meetings',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.deepBlue,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => context.go('/counselor/history'),
+                  child: const Text('View All'),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: AppTheme.lightGray),
+          _upcomingMeetings.isEmpty
+              ? const Padding(
+                padding: EdgeInsets.all(48),
+                child: Center(
+                  child: Text(
+                    'No upcoming meetings',
+                    style: TextStyle(color: AppTheme.mediumGray),
+                  ),
+                ),
+              )
+              : Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  children:
+                      _upcomingMeetings.map((meeting) {
+                        final sessionDate = meeting.sessionDate!;
+                        final dateText = DateFormat(
+                          'EEEE, MMM dd, yyyy',
+                        ).format(sessionDate);
+                        final timeText =
+                            meeting.sessionTime != null
+                                ? meeting.sessionTime!.format(context)
+                                : 'Time not set';
+                        final location = meeting.locationMode ?? 'To be announced';
+                        final sessionType = meeting.sessionType ?? 'Counseling';
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.skyBlue.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.event_available_rounded,
+                                  size: 18,
+                                  color: AppTheme.skyBlue,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      sessionType,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.deepBlue,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '$dateText • $timeText',
+                                      style: const TextStyle(
+                                        color: AppTheme.mediumGray,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                location,
+                                style: const TextStyle(
+                                  color: AppTheme.mediumGray,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                ),
+              ),
+        ],
+      ),
+    );
+
+    final studentHistoryCard = Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            offset: const Offset(0, 4),
+            blurRadius: 20,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Student History Records',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.deepBlue,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => context.go('/counselor/history'),
+                  child: const Text('View All'),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: AppTheme.lightGray),
+          _studentHistoryRecords.isEmpty
+              ? const Padding(
+                padding: EdgeInsets.all(48),
+                child: Center(
+                  child: Text(
+                    'No student history records',
+                    style: TextStyle(color: AppTheme.mediumGray),
+                  ),
+                ),
+              )
+              : Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  children:
+                      _studentHistoryRecords.map((record) {
+                        final requestedDate = DateFormat(
+                          'MMM dd, yyyy',
+                        ).format(record.createdAt);
+                        final statusLabel = record.status.displayName;
+                        final location = record.locationMode ?? 'In-person';
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.successGreen.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.history_rounded,
+                                  size: 18,
+                                  color: AppTheme.successGreen,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      statusLabel,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.deepBlue,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Requested: $requestedDate',
+                                      style: const TextStyle(
+                                        color: AppTheme.mediumGray,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                location,
+                                style: const TextStyle(
+                                  color: AppTheme.mediumGray,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                ),
+              ),
+        ],
+      ),
+    );
+
+    if (isWide) {
+      return Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 1, child: recentActivityCard),
+              const SizedBox(width: 24),
+              Expanded(flex: 2, child: timelineCard),
+              const SizedBox(width: 24),
+              Expanded(flex: 1, child: forwardedCard),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: upcomingMeetingsCard),
+              const SizedBox(width: 24),
+              Expanded(child: studentHistoryCard),
+            ],
+          ),
         ],
       );
     }
@@ -671,6 +989,10 @@ class _CounselorDashboardState extends State<CounselorDashboard> {
     return Column(
       children: [
         forwardedCard,
+        const SizedBox(height: 24),
+        upcomingMeetingsCard,
+        const SizedBox(height: 24),
+        studentHistoryCard,
         const SizedBox(height: 24),
         timelineCard,
         const SizedBox(height: 24),
